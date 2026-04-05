@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-feature
+        android:name="android.hardware.telephony"
+        android:required="false" />
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.SEND_SMS" />
+
+
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@drawable/appicon"
+        android:supportsRtl="true"
+        android:label="Blood Buddy"
+        android:theme="@style/Theme.MyApplication"
+        tools:targetApi="31">
+
+        <meta-data
+            android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version" />
+
+        <meta-data
+            android:name="com.google.firebase.database.DatabaseApp"
+            android:value="true" />
+
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notification"/>
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/colorAccent"/>
+
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AAPK2ee3c403aac24a01a4368148cd8e0019e654qj508BtZjGPXLBCeSpBOyK4yRvxF8w3U46FYJhutXcTJcwTee8qTnV6P3oHy" />
+
+        <activity android:name=".SplashActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- <activity android:theme="@style/Theme.MyApplication.NoActionBar" /> -->
+        <service android:name=".LocationService"
+            android:enabled="true"/>
+
+        <service android:name=".MyFirebaseMessagingService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <receiver android:name=".BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+
+        <activity android:name=".LoginActivity"/>
+        <activity android:name=".RegisterActivity" />
+        <activity android:name=".DomainActivity"/>
+        <activity android:name=".DonorActivity" />
+        <activity android:name=".ReceiverActivity"/>
+        <activity android:name=".Dashboard"/>
+        <activity android:name=".DisplayDonorActivity" />
+        <activity android:name=".LogoutActivity"/>
+        <activity android:name=".MapActivity"/>
+        <activity android:name=".RequestListActivity"/>
+        <activity android:name=".BloodInfoActivity"/>
+        <activity android:name=".ProfileActivity"/>
+        <activity android:name=".NearbyHospitalsActivity"/>
+        <activity android:name=".DonorsListActivity"/>
+        <activity android:name=".ForgotPassword"/>
+        <activity android:name=".UploadImage"/>
+        <activity android:name=".RequestFormActivity"/>
+        <activity android:name=".RequestActivity"/>
+        <activity android:name=".About"/>
+        <activity android:name=".EditProfileActivity"/>
+<activity android:name="UserFeedback"/>
+        <activity android:name=".AdminFeedback"/>
+
+
+
+    </application>
+
+</manifest>

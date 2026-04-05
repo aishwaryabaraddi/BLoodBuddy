@@ -1,0 +1,114 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+
+
+
+    <string name="district_spinner_description">Select your district</string>
+    <string name="taluk_spinner_description">Select your taluk</string>
+    <string name="hamburger_menu">Hamburger Menu</string>
+    <string name="app_name">Blood Donation App</string>
+    <string name="devinfo" />
+    <string name="bloodinfo" />
+    <string name="first_fragment_label" />
+    <string name="second_fragment_label" />
+    <string name="title_activity_login" />
+    <string name="profile" />
+    <string name="home" />
+    <string name="achiev" />
+    <string name="fndBlood" />
+    <string name="nearH" />
+    <string name="lgout" />
+    <string name="baseline_menu_24" />
+    <string name="profile_activity_label" />
+    <string name="Profile" />
+    <color name="lavender">#E6E6FA</color>
+
+
+    <!-- Districts -->
+    <string-array name="districts_array">
+        <item>Bengaluru Urban</item>
+        <item>Mysuru</item>
+        <item>Belagavi</item>
+        <!-- Add all other districts -->
+    </string-array>
+
+    <!-- Taluks for each district (this is just a sample, repeat for all districts) -->
+    <string-array name="taluks_bengaluru_urban">
+        <item>Bangalore East</item>
+        <item>Bangalore North</item>
+        <item>Bangalore South</item>
+        <!-- Add other taluks -->
+    </string-array>
+
+    <string-array name="taluks_mysuru">
+        <item>Mysore North</item>
+        <item>Mysore South</item>
+        <!-- Add other taluks -->
+    </string-array>
+
+    <string-array name="taluks_belagavi">
+        <item>Belgaum</item>
+        <item>Chikodi</item>
+        <item>Gokak</item>
+        <!-- Add other taluks -->
+    </string-array>
+
+    <!-- Default empty array for safety -->
+    <string-array name="talukas">
+        <item>Select a district first</item>
+    </string-array>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <!-- Inside strings.xml -->
+    <!-- Inside strings.xml -->
+    <string name="select_blood_group">Blood Group
+        <item>A+</item>
+        <item>A-</item>
+        <item>B+</item>
+        <item>B-</item>
+        <item>AB+</item>
+        <item>AB-</item>
+        <item>O+</item>
+        <item>O-</item>
+    </string>
+
+
+    <string name="select_district">select_district\n</string>
+    <string name="select_taluk">select_taluk</string>
+
+    <string name="health_benefits_text">
+    <![CDATA[
+    <b>Health Benefits of Donating Blood</b>
+    <br>
+    May reveal health problems.
+    <br>
+    Prevents Hemochromatosis.
+    <br>
+    Maintain Cardiovascular health.
+    <br>
+    May reduce the risk of developing cancer.
+    <br>
+    Stimulates blood cell production.
+    <br>
+    Maintains healthy liver.
+    <br>
+    Weight loss.
+    <br>
+    Help improve your mental state.
+    ]]>
+</string>
+
+    <style name="BottomNavigationViewLabelStyle" parent="@android:style/TextAppearance">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">@color/white</item>
+    </style>
+
+    <style name="ToolbarTitleText" parent="TextAppearance.Widget.AppCompat.Toolbar.Title">
+        <item name="android:textSize">20sp</item>       <!-- Font size -->
+        <item name="android:textColor">@android:color/white</item> <!-- Text color -->
+        <item name="android:textStyle">bold</item>       <!-- Text style (bold) -->
+        <!-- Add more attributes if needed -->
+    </style>
+</resources>

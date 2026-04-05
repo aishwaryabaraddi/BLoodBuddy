@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="division_list" />
+    <string-array name="Blood_Group" />
+    <string-array name="blood_groups">blood_groups</string-array>
+    <string-array name="districts">districts</string-array>
+    <string-array name="taluks">taluks</string-array>
+    <string-array name="locations">locations</string-array>
+</resources>

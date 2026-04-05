@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="220dp"
+    android:layout_margin="10dp"
+    android:layout_marginBottom="10dp"
+    android:elevation="4dp"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="8dp">
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="230dp"
+        android:orientation="vertical"
+        android:padding="10dp">
+
+
+        <TextView
+            android:id="@+id/donorName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Donor Name"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/donorBloodType"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Blood Type: A+"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/donorPhoneNumber"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Phone: 1234567890"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/donorLatitude"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Latitude"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/donorLongitude"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Longitude"
+            android:textSize="16sp" />
+
+        <LinearLayout
+            android:layout_width="362dp"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/callButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Call" />
+
+            <Button
+                android:id="@+id/navigateButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:text="Direction" />
+
+        </LinearLayout>
+
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

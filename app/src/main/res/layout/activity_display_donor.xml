@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:visibility="gone" />
+
+    <!-- Header -->
+    <RelativeLayout
+        android:id="@+id/headerLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#EC3E3E"
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/tvTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_marginStart="35dp"
+            android:text="Donor Details"
+            android:textColor="@android:color/white"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/textView12"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentEnd="true"
+            android:layout_marginTop="10dp"
+            android:layout_marginEnd="3dp"
+            android:text="Version 1.0.0"
+            android:textColor="@android:color/white"
+            android:textSize="14sp" />
+
+        <ImageView
+            android:id="@+id/imageView7"
+            android:layout_width="39dp"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginStart="-10dp"
+            android:layout_marginTop="5dp"
+            app:srcCompat="@drawable/baseline_arrow_back_24" />
+
+    </RelativeLayout>
+
+    <!-- Sorting Spinners -->
+    <LinearLayout
+        android:id="@+id/sortingOptionsLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/headerLayout"
+        android:orientation="horizontal"
+        android:padding="16dp">
+
+        <!-- Blood Group Spinner -->
+        <Spinner
+            android:id="@+id/spinnerBloodGroup"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:contentDescription="Blood Group" />
+
+        <!-- Divider -->
+        <View
+            android:layout_width="5dp"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="8dp"
+            android:background="@android:color/darker_gray" />
+
+        <!-- District Spinner -->
+        <Spinner
+            android:id="@+id/spinnerDistrict"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:contentDescription="District" />
+
+        <!-- Divider -->
+        <View
+            android:layout_width="5dp"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="8dp"
+            android:background="@android:color/darker_gray" />
+
+        <!-- Taluk Spinner -->
+        <Spinner
+            android:id="@+id/spinnerTaluk"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:contentDescription="Taluk" />
+
+    </LinearLayout>
+
+    <!-- Content -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/sortingOptionsLayout"
+        android:background="@drawable/login2">
+
+        <LinearLayout
+            android:id="@+id/donorDetailsLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- This LinearLayout will contain dynamically added donor details as CardViews -->
+            <LinearLayout
+                android:id="@+id/donorDetailsContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+    <!-- Footer -->
+    <RelativeLayout
+        android:id="@+id/footerLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:background="#EC3E3E"
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/tvFooter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:text="BloodBuddy"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+    </RelativeLayout>
+
+</RelativeLayout>

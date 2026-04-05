@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="receiverDistrictTextView" type="id"/>
+    <item name="receiverNameTextView" type="id"/>
+    <item name="receiverTalukTextView" type="id"/>
+    <item name="receiverBloodGroupTextView" type="id"/>
+    <item name="receiverPurposeTextView" type="id"/>
+    <item name="register_taluk" type="id"/>
+    <item name="register_gender" type="id"/>
+    <item name="textNearbyHospitals" type="id"/>
+    <item name="hospitalNameTextView" type="id"/>
+    <item name="hospitalDetailsCardView" type="id"/>
+    <item name="hospitalDistanceTextView" type="id"/>
+    <item name="hospitalAddressTextView" type="id"/>
+    <item name="card_title" type="id"/>
+    <item name="card_blood_group" type="id"/>
+    <item name="card_phone_number" type="id"/>
+    <item name="card_latitude_longitude" type="id"/>
+    <item name="receiverListLayout" type="id"/>
+    <item name="receiverListScrollView" type="id"/>
+    <item name="receiverIcon" type="id"/>
+    <item name="receiverBloodGroup" type="id"/>
+    <item name="donorContact" type="id"/>
+    <item name="donorBloodGroup" type="id"/>
+    <item name="calloutName" type="id"/>
+    <item name="calloutContact" type="id"/>
+    <item name="calloutBloodGroup" type="id"/>
+    <item name="nav_upload" type="id"/>
+    <item name="imageContainer" type="id"/>
+    <item name="submitRequestButton" type="id"/>
+    <item name="requestTextView" type="id"/>
+</resources>

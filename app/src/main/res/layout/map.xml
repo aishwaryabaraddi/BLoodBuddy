@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/custom_toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#EC3E3E"
+        app:layout_constraintTop_toTopOf="parent" />
+<!--    &lt;!&ndash; Header &ndash;&gt;-->
+<!--    <LinearLayout-->
+<!--        android:id="@+id/header"-->
+<!--        android:layout_width="0dp"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:background="#EC3E3E"-->
+<!--        android:orientation="horizontal"-->
+<!--        android:padding="16dp"-->
+<!--        android:textAlignment="viewStart"-->
+<!--        app:layout_constraintEnd_toEndOf="parent"-->
+<!--        app:layout_constraintStart_toStartOf="parent"-->
+<!--        app:layout_constraintTop_toTopOf="parent">-->
+
+<!--        &lt;!&ndash; Title &ndash;&gt;-->
+<!--        <TextView-->
+<!--            android:id="@+id/titleTextView"-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_weight="1"-->
+<!--            android:text="Map"-->
+<!--            android:textColor="@android:color/white"-->
+<!--            android:textSize="20sp"-->
+<!--            android:textStyle="bold" />-->
+
+<!--        &lt;!&ndash; Version &ndash;&gt;-->
+<!--        <TextView-->
+<!--            android:id="@+id/versionTextView"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:text="Version 1.0.0"-->
+<!--            android:textAlignment="viewEnd"-->
+<!--            android:textColor="#FFFCFC"-->
+<!--            android:textSize="14sp" />-->
+<!--    </LinearLayout>-->
+
+    <!-- Footer -->
+    <LinearLayout
+        android:id="@+id/footer"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="#EC3E3E"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <!-- App Name -->
+        <TextView
+            android:id="@+id/appNameTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="140dp"
+            android:text="Blood Buddy"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- MapView -->
+    <com.esri.arcgisruntime.mapping.view.MapView
+        android:id="@+id/mapView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@id/footer"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/custom_toolbar"
+        app:layout_constraintVertical_bias="1.0">
+    </com.esri.arcgisruntime.mapping.view.MapView>
+
+    <!-- Donors Icon -->
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="60dp"
+        android:layout_marginEnd="16dp"
+        android:background="@drawable/black_border"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/custom_toolbar">
+
+        <ImageView
+            android:id="@+id/legendIcon"
+            android:layout_width="90dp"
+            android:layout_height="80dp"
+            android:clickable="true"
+            android:contentDescription="Donors"
+            android:src="@drawable/baseline_groups_24" />
+    </RelativeLayout>
+
+    <!-- Receivers Icon -->
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:background="@drawable/black_border"
+        android:translationY="210dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/legendIcon">
+
+        <ImageView
+            android:id="@+id/legendIconReceivers"
+            android:layout_width="90dp"
+            android:layout_height="70dp"
+            android:clickable="true"
+            android:contentDescription="Receivers"
+            android:src="@drawable/info" />
+    </RelativeLayout>
+
+    <!-- Donor List ScrollView -->
+    <ScrollView
+        android:id="@+id/donorListScrollView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/footer"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/header">
+
+        <LinearLayout
+            android:id="@+id/donorListLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Donor details will be dynamically added here -->
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Receiver List ScrollView -->
+    <ScrollView
+        android:id="@+id/receiverListScrollView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/footer"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/header">
+
+        <LinearLayout
+            android:id="@+id/receiverListLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Receiver details will be dynamically added here -->
+        </LinearLayout>
+    </ScrollView>
+
+    <TextView
+        android:id="@+id/textView4"
+        android:layout_width="222dp"
+        android:layout_height="36dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="120dp"
+        android:layout_weight="1"
+        android:gravity="center_vertical"
+        android:text="Map"
+        android:textColor="@color/white"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="@+id/custom_toolbar"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/textView13"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="6dp"
+        android:text="Version 1.0.0"
+        android:textColor="@color/white"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/custom_toolbar" />
+
+    <ImageView
+        android:id="@+id/imageViewBack"
+        android:layout_width="39dp"
+        android:layout_height="30dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintStart_toStartOf="@+id/custom_toolbar"
+        app:layout_constraintTop_toTopOf="@+id/custom_toolbar"
+        app:srcCompat="@drawable/baseline_arrow_back_24" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

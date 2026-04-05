@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/navigation_request_list"
+        android:icon="@drawable/baseline_article_24"
+        android:title="Requests" />
+    <item
+        android:id="@+id/navigation_donor_list"
+        android:icon="@drawable/baseline_list_alt_24"
+        android:title="Donor List" />
+    <item
+        android:id="@+id/navigation_map"
+        android:icon="@drawable/nearby"
+        android:title="Map" />
+    <item
+        android:id="@+id/navigation_feedback"
+        android:icon="@drawable/baseline_feedback_24"
+        android:title="Feedback" />
+<!--    <item-->
+<!--        android:id="@+id/navigation_about"-->
+<!--        android:icon="@drawable/baseline_info_outline_24"-->
+<!--        android:title="About" />-->
+</menu>

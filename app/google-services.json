@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "966513929685",
+    "project_id": "bloodbuddy-26803",
+    "storage_bucket": "bloodbuddy-26803.firebasestorage.app",
+    "firebase_url": "https://bloodbuddy-26803-default-rtdb.firebaseio.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:966513929685:android:1faaf90a9925a11502215c",
+        "android_client_info": {
+          "package_name": "com.example.bloodbuddy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDlN1J7HB7LRgol7quxk_pFgHgh3XqxaDE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

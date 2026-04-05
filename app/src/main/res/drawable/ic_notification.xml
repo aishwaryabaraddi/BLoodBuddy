@@ -1,0 +1,8 @@
+<!-- ic_notification.xml -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/lavender" /> <!-- Background color for the icon -->
+    <size
+        android:width="48dp"
+        android:height="48dp" /> <!-- Adjust size as needed -->
+</shape>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/requesterNameTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Requester Name" />
+
+    <TextView
+        android:id="@+id/requesterPhoneNumberTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Requester Phone Number" />
+
+    <TextView
+        android:id="@+id/requesterTalukTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Requester Taluk" />
+
+    <TextView
+        android:id="@+id/messageTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Message" />
+</LinearLayout>

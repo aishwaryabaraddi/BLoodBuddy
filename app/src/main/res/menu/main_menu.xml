@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    tools:ignore="ExtraText">
+
+    <group android:checkableBehavior="single">
+
+        <item
+            android:id="@+id/nav_profile"
+            android:title="Profile"
+            android:icon="@drawable/account" />
+        <item
+            android:id="@+id/nav_Info"
+            android:title="Blood Info"
+            android:icon="@drawable/info" />
+        <item
+            android:id="@+id/nav_NearbyBloodbanks"
+            android:title="Nearby Hospitals"
+            android:icon="@drawable/nearby" />
+<!--        <item-->
+<!--            android:id="nav_upload"-->
+<!--            android:title="Upload"-->
+<!--            android:icon="@drawable/baseline_cloud_upload_24"/>-->
+<!--        <item-->
+<!--            android:id="@+id/nav_Myrequests"-->
+<!--            android:title="My Requests"-->
+<!--            android:icon="@drawable/baseline_list_alt_24" />-->
+        
+        <item
+            android:id="@+id/nav_LogOut"
+            android:title="Log Out"
+            android:icon="@drawable/logout" />
+    </group>
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_upload"
+            android:title="Upload"
+            android:icon="@drawable/baseline_cloud_upload_24"/>
+        <item
+            android:id="@+id/nav_feedback"
+            android:title="Feedbacks"
+            android:icon="@drawable/baseline_feedback_24"/>
+
+    </group>
+</menu>

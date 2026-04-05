@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="checkbox_other" type="id" />
+    <item name="checkbox_male" type="id" />
+    <item name="checkbox_female" type="id" />
+    <item name="editTextTextPersonName11" type="id" />
+    <item name="nav_donor" type="id" />
+    <item name="nav_receiver" type="id" />
+    <item name="drawer_layout" type="id" />
+</resources>
