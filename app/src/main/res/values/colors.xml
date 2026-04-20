@@ -1,13 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="purple_200">#EC3E3E</color>
-    <color name="purple_500">#EC3E3E</color>
-    <color name="purple_700">#EC3E3E</color>
+    <color name="colorPrimary">#C62828</color>
+    <color name="colorPrimaryDark">#8E0000</color>
+    <color name="colorAccent">#C62828</color>
+
+    <color name="purple_200">#EF5350</color>
+    <color name="purple_500">#C62828</color>
+    <color name="purple_700">#8E0000</color>
     <color name="teal_200">#FF03DAC5</color>
-    <color name="colorAccent">#03DAC5</color>
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="red">#CB4F4F</color> <!-- Assuming lavender should be a light purple -->
-    <color name="light_gray">#CCCCCC</color> <!-- Replace with your desired color value -->
+    <color name="red">#C62828</color>
+    <color name="light_gray">#F5F5F5</color>
+    <color name="dark_gray">#424242</color>
+    <color name="medium_gray">#757575</color>
+    <color name="error_red">#B00020</color>
+
+    <color name="red_light">#FFF5F5</color>
+    <color name="green_light">#E8F5E9</color>
+    <color name="green_dark">#2E7D32</color>
 </resources>

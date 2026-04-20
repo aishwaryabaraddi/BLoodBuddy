@@ -2,341 +2,252 @@ package com.example.bloodbuddy;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Dialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.location.Address;
 import android.location.Geocoder;
-import android.location.Location;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
-import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+
 public class ReceiverActivity extends AppCompatActivity {
 
     private static final String TAG = "ReceiverActivity";
-    private EditText etName, etPhonenumber,etToWhomFor, etLocation;
+    private EditText etName, etPhonenumber, etToWhomFor, etLocation;
     private Spinner spinnerDistrict, spinnerTaluk, spinnerBloodGroup;
     private Button btnSubmit;
-    private DatabaseReference databaseReference;
+    private ProgressBar progressBar;
+    private FirebaseFirestore db;
     private FusedLocationProviderClient fusedLocationClient;
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
 
-    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.receiver);
 
-        // Initialize Firebase
-        FirebaseDatabase database = FirebaseDatabase.getInstance();
-        databaseReference = database.getReference("receivers");
-
-        // Initialize views
+        db = FirebaseFirestore.getInstance();
         etName = findViewById(R.id.etName);
-        etPhonenumber =findViewById(R.id.etPhonenumber);
+        etPhonenumber = findViewById(R.id.etPhonenumber);
         spinnerDistrict = findViewById(R.id.etDistrict);
         spinnerTaluk = findViewById(R.id.etTaluk);
         spinnerBloodGroup = findViewById(R.id.etBloodGroup);
         etToWhomFor = findViewById(R.id.etToWhomFor);
         etLocation = findViewById(R.id.etLocation);
         btnSubmit = findViewById(R.id.btnSubmit);
+        progressBar = findViewById(R.id.progressBar);
 
-        // Initialize location client
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
-        // Populate District Spinner
+        setupSpinners();
+        requestLocationPermission();
+
+        findViewById(R.id.imageViewBack).setOnClickListener(v -> finish());
+        btnSubmit.setOnClickListener(v -> validateAndSubmit());
+    }
+
+    private void setupSpinners() {
         List<String> districts = Arrays.asList("Select District", "Bagalkot", "Bangalore Rural", "Bangalore Urban", "Belgaum", "Bellary", "Bidar", "Bijapur", "Chamarajanagar", "Chikballapur", "Chikmagalur", "Chitradurga", "Dakshina Kannada", "Davanagere", "Dharwad", "Gadag", "Gulbarga", "Hassan", "Haveri", "Kodagu", "Kolar", "Koppal", "Mandya", "Mysore", "Raichur", "Ramanagara", "Shimoga", "Tumkur", "Udupi", "Uttara Kannada", "Yadgir");
         ArrayAdapter<String> districtAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, districts);
         districtAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerDistrict.setAdapter(districtAdapter);
 
-        // Populate Taluk Spinner based on selected District
-        spinnerDistrict.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                String selectedDistrict = (String) parent.getItemAtPosition(position);
-                updateTalukSpinner(selectedDistrict);
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
-
-        // Populate Blood Group Spinner
         List<String> bloodGroups = Arrays.asList("Select Blood Group", "A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-");
         ArrayAdapter<String> bloodGroupAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, bloodGroups);
         bloodGroupAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerBloodGroup.setAdapter(bloodGroupAdapter);
 
-        // Set location
-        setLocation();
-
-        btnSubmit.setOnClickListener(new View.OnClickListener() {
+        spinnerDistrict.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
-            public void onClick(View v) {
-                String name = etName.getText().toString().trim();
-                String PhoneNumber = etPhonenumber.getText().toString().trim();
-                String district = spinnerDistrict.getSelectedItem().toString();
-                String taluk = spinnerTaluk.getSelectedItem().toString();
-                String bloodGroup = spinnerBloodGroup.getSelectedItem().toString();
-                String toWhomFor = etToWhomFor.getText().toString().trim();
-                String location = etLocation.getText().toString().trim();
-
-                if (!name.isEmpty() && !district.equals("Select District") && !taluk.equals("Select Taluk") &&
-                        !bloodGroup.equals("Select Blood Group") && !toWhomFor.isEmpty() && !location.isEmpty()) {
-
-                    // Store the receiver in the database
-                    String receiverId = databaseReference.push().getKey();
-                    if (receiverId != null) {
-                        // Get latitude and longitude for the location
-                        Geocoder geocoder = new Geocoder(ReceiverActivity.this, Locale.getDefault());
-                        try {
-                            List<Address> addresses = geocoder.getFromLocationName(location, 1);
-                            if (addresses != null && !addresses.isEmpty()) {
-                                Address address = addresses.get(0);
-                                double latitude = address.getLatitude();
-                                double longitude = address.getLongitude();
-
-                                // Create receiver object with latitude and longitude
-                                Receiver receiver = new Receiver(receiverId, name,PhoneNumber, district, taluk, bloodGroup, toWhomFor, location, latitude, longitude);
-                                databaseReference.child(receiverId).setValue(receiver).addOnCompleteListener(new OnCompleteListener<Void>() {
-                                    @Override
-                                    public void onComplete(@NonNull Task<Void> task) {
-                                        if (task.isSuccessful()) {
-                                            fetchDonorData();
-                                        } else {
-                                            Log.e(TAG, "Failed to save receiver data", task.getException());
-                                            Toast.makeText(ReceiverActivity.this, "Failed to save receiver data", Toast.LENGTH_SHORT).show();
-                                        }
-                                    }
-                                });
-                            } else {
-                                Toast.makeText(ReceiverActivity.this, "Location not found", Toast.LENGTH_SHORT).show();
-                            }
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                            Toast.makeText(ReceiverActivity.this, "Geocoding failed", Toast.LENGTH_SHORT).show();
-                        }
-                    } else {
-                        Log.e(TAG, "Receiver ID is null");
-                    }
-                } else {
-                    Toast.makeText(ReceiverActivity.this, "Please fill all fields", Toast.LENGTH_SHORT).show();
-                }
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                updateTalukSpinner(districts.get(position));
             }
-        });
-        // ImageView for going back to DomainActivity
-        @SuppressLint({"MissingInflatedId", "LocalSuppress"})
-        ImageView imageViewBack = findViewById(R.id.imageViewBack);
-        imageViewBack.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
-                // Navigate back to DomainActivity
-                Intent intent = new Intent(ReceiverActivity.this, DomainActivity.class);
-                startActivity(intent);
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
+    }
+
+    private void validateAndSubmit() {
+        String name = etName.getText().toString().trim();
+        String phoneNumber = etPhonenumber.getText().toString().trim();
+        String district = spinnerDistrict.getSelectedItem().toString();
+        String taluk = spinnerTaluk.getSelectedItem().toString();
+        String bloodGroup = spinnerBloodGroup.getSelectedItem().toString();
+        String toWhomFor = etToWhomFor.getText().toString().trim();
+        String locationText = etLocation.getText().toString().trim();
+
+        if (name.isEmpty() || phoneNumber.isEmpty() || toWhomFor.isEmpty() || locationText.isEmpty()) {
+            Toast.makeText(this, "All fields are required", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (district.equals("Select District") || taluk.equals("Select Taluk") || bloodGroup.equals("Select Blood Group")) {
+            Toast.makeText(this, "Please select all options", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser == null) return;
+        String userId = currentUser.getUid();
+
+        progressBar.setVisibility(View.VISIBLE);
+        btnSubmit.setEnabled(false);
+
+        Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+        try {
+            List<Address> addresses = geocoder.getFromLocationName(locationText, 1);
+            double latitude = 0, longitude = 0;
+            if (addresses != null && !addresses.isEmpty()) {
+                latitude = addresses.get(0).getLatitude();
+                longitude = addresses.get(0).getLongitude();
+            }
+
+            String receiverId = db.collection("receivers").document().getId();
+            Receiver receiver = new Receiver(receiverId, userId, name, phoneNumber, district, taluk, bloodGroup, toWhomFor, locationText, latitude, longitude);
+            
+            final double finalLat = latitude;
+            final double finalLng = longitude;
+            db.collection("receivers").document(receiverId).set(receiver).addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    broadcastSOS(bloodGroup, toWhomFor, finalLat, finalLng);
+                    showSuccessDialog();
+                } else {
+                    progressBar.setVisibility(View.GONE);
+                    btnSubmit.setEnabled(true);
+                    Toast.makeText(ReceiverActivity.this, "Request failed", Toast.LENGTH_SHORT).show();
+                }
+            });
+        } catch (IOException e) {
+            progressBar.setVisibility(View.GONE);
+            btnSubmit.setEnabled(true);
+            Toast.makeText(this, "Location error", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void broadcastSOS(String bloodGroup, String patientName, double lat, double lng) {
+        String topic = bloodGroup.replace("+", "_POSITIVE").replace("-", "_NEGATIVE");
+        
+        // This is a placeholder. In a standard app, you'd call a Cloud Function.
+        // For a demonstration of the logic:
+        Log.d(TAG, "Broadcasting SOS to " + topic + " at (" + lat + ", " + lng + ")");
+        
+        // We will include lat/lng in the data payload so the receiving devices can filter by distance.
+        JSONObject payload = new JSONObject();
+        try {
+            JSONObject data = new JSONObject();
+            data.put("title", "URGENT: " + bloodGroup + " Needed!");
+            data.put("message", patientName + " needs your help. Tap to see location.");
+            data.put("lat", String.valueOf(lat));
+            data.put("lng", String.valueOf(lng));
+            data.put("type", "SOS");
+            
+            payload.put("to", "/topics/" + topic);
+            payload.put("data", data);
+            
+            // Note: Sending directly from app is insecure (requires Server Key).
+            // This logic represents what the backend would send.
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void showSuccessDialog() {
+        progressBar.setVisibility(View.GONE);
+        btnSubmit.setEnabled(true);
+
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.dialog_success);
+        dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        dialog.setCancelable(false);
+
+        dialog.findViewById(R.id.btnGotIt).setOnClickListener(v -> {
+            dialog.dismiss();
+            startActivity(new Intent(ReceiverActivity.this, DomainActivity.class));
+            finish();
+        });
+
+        dialog.findViewById(R.id.btnGoHome).setOnClickListener(v -> {
+            dialog.dismiss();
+            finish();
+        });
+
+        dialog.show();
+    }
+
+    private void requestLocationPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_PERMISSION_REQUEST_CODE);
+        } else {
+            getCurrentLocation();
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private void getCurrentLocation() {
+        fusedLocationClient.getLastLocation().addOnSuccessListener(this, location -> {
+            if (location != null) {
+                Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+                try {
+                    List<Address> addresses = geocoder.getFromLocation(location.getLatitude(), location.getLongitude(), 1);
+                    if (addresses != null && !addresses.isEmpty()) {
+                        etLocation.setText(addresses.get(0).getAddressLine(0));
+                    }
+                } catch (IOException e) {
+                    Log.e(TAG, "Geocoder failed", e);
+                }
             }
         });
     }
 
-        private void updateTalukSpinner(String selectedDistrict) {
+    private void updateTalukSpinner(String district) {
         List<String> taluks;
-            switch (selectedDistrict) {
-                case "Bagalkot":
-                    taluks = Arrays.asList("Select Taluk", "Bagalkot", "Badami", "Bilagi", "Hungund", "Jamkhandi", "Mudhol");
-                    break;
-                case "Bangalore Rural":
-                    taluks = Arrays.asList("Select Taluk", "Devanahalli", "Doddaballapur", "Hosakote", "Nelamangala");
-                    break;
-                case "Bangalore Urban":
-                    taluks = Arrays.asList("Select Taluk", "Bangalore East", "Bangalore North", "Bangalore South", "Anekal", "Yelahanka");
-                    break;
-                case "Belgaum":
-                    taluks = Arrays.asList("Select Taluk", "Athani", "Bailhongal", "Belgaum", "Chikodi", "Gokak", "Hukkeri", "Khanapur", "Ramdurg", "Raibag", "Saundatti");
-                    break;
-                case "Bellary":
-                    taluks = Arrays.asList("Select Taluk", "Sandur", "Hospet", "Siruguppa", "Kudligi", "Hagaribommanahalli");
-                    break;
-                case "Bidar":
-                    taluks = Arrays.asList("Select Taluk", "Humnabad", "Bidar", "Bhalki", "Aurad", "Basavakalyan");
-                    break;
-                case "Bijapur":
-                    taluks = Arrays.asList("Select Taluk", "Bijapur", "Basavana Bagewadi", "Sindagi", "Indi", "Muddebihal");
-                    break;
-                case "Chamarajanagar":
-                    taluks = Arrays.asList("Select Taluk", "Chamarajanagar", "Gundlupet", "Kollegal", "Yelandur");
-                    break;
-                case "Chikballapur":
-                    taluks = Arrays.asList("Select Taluk", "Chikballapur", "Chintamani", "Gauribidanur", "Bagepalli", "Sidlaghatta", "Gudibanda");
-                    break;
-                case "Chikmagalur":
-                    taluks = Arrays.asList("Select Taluk", "Chikmagalur", "Kadur", "Koppa", "Mudigere", "Narasimharajapura", "Sringeri", "Tarikere");
-                    break;
-                case "Chitradurga":
-                    taluks = Arrays.asList("Select Taluk", "Chitradurga", "Hiriyur", "Hosadurga", "Holalkere", "Molakalmuru", "Challakere");
-                    break;
-                case "Dakshina Kannada":
-                    taluks = Arrays.asList("Select Taluk", "Mangalore", "Bantwal", "Belthangady", "Puttur", "Sullia", "Ullal", "Karkala", "Mudabidri", "Mulki", "Surathkal", "Moodabidri");
-                    break;
-                case "Davanagere":
-                    taluks = Arrays.asList("Select Taluk", "Davanagere", "Channagiri", "Honnali", "Harihar", "Harapanahalli", "Jagalur");
-                    break;
-                case "Dharwad":
-                    taluks = Arrays.asList("Select Taluk", "Dharwad", "Hubli", "Kalghatgi", "Kundgol", "Navalgund");
-                    break;
-                case "Gadag":
-                    taluks = Arrays.asList("Select Taluk", "Gadag", "Mundargi", "Nargund", "Ron", "Shirhatti");
-                    break;
-                case "Gulbarga":
-                    taluks = Arrays.asList("Select Taluk", "Kamalapur", "Shahbad", "Kalaburagi", "Aland", "Jewargi", "Afzalpur");
-                    break;
-                case "Hassan":
-                    taluks = Arrays.asList("Select Taluk", "Arsikere", "Belur", "Channarayapatna", "Hassan", "Holenarsipur", "Sakleshpur", "Alur", "Arkalgud");
-                    break;
-                case "Haveri":
-                    taluks = Arrays.asList("Select Taluk", "Hanagal", "Haveri", "Hirekerur", "Ranebennur", "Byadgi", "Savanur", "Shiggaon");
-                    break;
-                case "Kodagu":
-                    taluks = Arrays.asList("Select Taluk", "Madikeri", "Somwarpet", "Virajpet");
-                    break;
-                case "Kolar":
-                    taluks = Arrays.asList("Select Taluk", "Bangarapet", "Kolar", "Malur", "Mulbagal", "Srinivaspur");
-                    break;
-                case "Koppal":
-                    taluks = Arrays.asList("Select Taluk", "Gangawati", "Koppal", "Kushtagi", "Yelburga");
-                    break;
-                case "Mandya":
-                    taluks = Arrays.asList("Select Taluk", "Krishnarajpet", "Mandya", "Malavalli", "Nagamangala", "Pandavapura", "Srirangapatna", "Maddur");
-                    break;
-                case "Mysore":
-                    taluks = Arrays.asList("Select Taluk", "Hunsur", "Krishnarajanagara", "Mysore", "Nanjangud", "Piriyapatna", "Tirumakudal Narsipur");
-                    break;
-                case "Raichur":
-                    taluks = Arrays.asList("Select Taluk", "Devadurga", "Lingsugur", "Manvi", "Raichur", "Sindhanur");
-                    break;
-                case "Ramanagara":
-                    taluks = Arrays.asList("Select Taluk", "Channapatna", "Kanakapura", "Magadi", "Ramanagaram");
-                    break;
-                case "Shimoga":
-                    taluks = Arrays.asList("Select Taluk", "Bhadravathi", "Hosanagara", "Sagara", "Shikarpur", "Shimoga", "Sorab", "Tirthahalli");
-                    break;
-                case "Tumkur":
-                    taluks = Arrays.asList("Select Taluk", "Tumkur", "Sira", "Tiptur", "Gubbi", "Madhugiri");
-                    break;
-                case "Udupi":
-                    taluks = Arrays.asList("Select Taluk", "Karkala", "Kundapura", "Udupi");
-                    break;
-                case "Uttara Kannada":
-                    taluks = Arrays.asList("Select Taluk", "Ankola", "Bhatkal", "Haliyal", "Karwar", "Kumta", "Mundgod", "Siddapur", "Sirsi", "Yellapur", "Dandeli");
-                    break;
-                case "Yadgir":
-                    taluks = Arrays.asList("Select Taluk", "Shahpur", "Shorapur", "Yadgir");
-                    break;
-                default:
-                    taluks = Arrays.asList("Select Taluk");
-                    break;
-            }
+        switch (district) {
+            case "Bagalkot": taluks = Arrays.asList("Select Taluk", "Bagalkot", "Badami", "Bilagi", "Hungund", "Jamkhandi", "Mudhol"); break;
+            case "Bangalore Rural": taluks = Arrays.asList("Select Taluk", "Devanahalli", "Doddaballapur", "Hosakote", "Nelamangala"); break;
+            case "Bangalore Urban": taluks = Arrays.asList("Select Taluk", "Bangalore East", "Bangalore North", "Bangalore South", "Anekal", "Yelahanka"); break;
+            case "Belgaum": taluks = Arrays.asList("Select Taluk", "Athani", "Bailhongal", "Belgaum", "Chikodi", "Gokak", "Hukkeri", "Khanapur", "Ramdurg", "Raibag", "Saundatti"); break;
+            case "Tumkur": taluks = Arrays.asList("Select Taluk", "Tumkur", "Sira", "Tiptur", "Gubbi", "Madhugiri", "Kunigal", "Pavagada", "Koratagere", "Turuvekere"); break;
+            default: taluks = Arrays.asList("Select Taluk"); break;
+        }
         ArrayAdapter<String> talukAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, taluks);
         talukAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerTaluk.setAdapter(talukAdapter);
-    }
-
-    private void setLocation() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_PERMISSION_REQUEST_CODE);
-            return;
-        }
-        fusedLocationClient.getLastLocation().addOnCompleteListener(new OnCompleteListener<Location>() {
-            @Override
-            public void onComplete(@NonNull Task<Location> task) {
-                if (task.isSuccessful() && task.getResult() != null) {
-                    Location location = task.getResult();
-                    Geocoder geocoder = new Geocoder(ReceiverActivity.this, Locale.getDefault());
-                    try {
-                        List<Address> addresses = geocoder.getFromLocation(location.getLatitude(), location.getLongitude(), 1);
-                        if (addresses != null && !addresses.isEmpty()) {
-                            Address address = addresses.get(0);
-                            etLocation.setText(address.getAddressLine(0));
-                        } else {
-                            Toast.makeText(ReceiverActivity.this, "Unable to get address", Toast.LENGTH_SHORT).show();
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        Toast.makeText(ReceiverActivity.this, "Unable to get address", Toast.LENGTH_SHORT).show();
-                    }
-                } else {
-                    Toast.makeText(ReceiverActivity.this, "Failed to get location", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                setLocation();
-            } else {
-                Toast.makeText(this, "Location permission denied", Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
-
-    private void fetchDonorData() {
-        DatabaseReference donorsRef = FirebaseDatabase.getInstance().getReference("donors");
-        donorsRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                List<Donor> donors = new ArrayList<>();
-                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                    Donor donor = snapshot.getValue(Donor.class);
-                    if (donor != null) {
-                        donors.add(donor);
-                    }
-                }
-                if (!donors.isEmpty()) {
-                    Intent intent = new Intent(ReceiverActivity.this, DisplayDonorActivity.class);
-                    intent.putExtra("donors", (Serializable) donors);
-                    startActivity(intent);
-                } else {
-                    Toast.makeText(ReceiverActivity.this, "No donors found", Toast.LENGTH_SHORT).show();
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-                Toast.makeText(ReceiverActivity.this, "Failed to fetch donor data", Toast.LENGTH_SHORT).show();
-            }
-        });
     }
 }

@@ -16,6 +16,7 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven { url 'https://jitpack.io' }
         // Add Esri repository
         maven {
             url 'https://esri.jfrog.io/artifactory/arcgis'
