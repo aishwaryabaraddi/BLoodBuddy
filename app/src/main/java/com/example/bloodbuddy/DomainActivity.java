@@ -8,7 +8,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.view.Menu;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -23,16 +25,15 @@ import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.RequestOptions;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.text.ParseException;
@@ -45,6 +46,8 @@ import java.util.concurrent.TimeUnit;
 
 public class DomainActivity extends AppCompatActivity {
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 100;
+    private static final String ADMIN_EMAIL = "viju.r@gmail.com";
+    private static final String TAG = "DomainActivity";
 
     DrawerLayout drawerLayout;
     NavigationView navigationView;
@@ -85,28 +88,27 @@ public class DomainActivity extends AppCompatActivity {
         imageAdapter = new ImageAdapter(this, imageUris);
         viewPager.setAdapter(imageAdapter);
 
-        fetchImageUrisFromFirebase();
+        fetchCarouselFromFirestore();
 
         runnable = new Runnable() {
             @Override
             public void run() {
-                if (imageAdapter.getItemCount() > 0) {
+                if (imageAdapter.getItemCount() > 1) {
                     if (currentItem >= imageAdapter.getItemCount()) {
                         currentItem = 0;
                     }
                     viewPager.setCurrentItem(currentItem++, true);
                 }
-                handler.postDelayed(this, 3000);
+                handler.postDelayed(this, 4000);
             }
         };
-        handler.postDelayed(runnable, 3000);
+        handler.postDelayed(runnable, 4000);
 
         findViewById(R.id.button1_container).setOnClickListener(v -> startActivity(new Intent(this, DonorActivity.class)));
         findViewById(R.id.button2_container).setOnClickListener(v -> startActivity(new Intent(this, ReceiverActivity.class)));
         findViewById(R.id.btn_menu).setOnClickListener(v -> drawerLayout.openDrawer(GravityCompat.START));
 
-        // Set up the AI Chat FAB listener
-        FloatingActionButton fabAiChat = findViewById(R.id.fab_ai_chat);
+        ExtendedFloatingActionButton fabAiChat = findViewById(R.id.fab_ai_chat);
         fabAiChat.setOnClickListener(v -> startActivity(new Intent(DomainActivity.this, ChatAiActivity.class)));
 
         navigationView.setNavigationItemSelectedListener(item -> {
@@ -133,17 +135,51 @@ public class DomainActivity extends AppCompatActivity {
 
         checkAndRequestPermissions();
 
-        PeriodicWorkRequest locationWorkRequest = new PeriodicWorkRequest.Builder(LocationWorker.class, 15, TimeUnit.MINUTES).build();
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork("LocationWork", ExistingPeriodicWorkPolicy.KEEP, locationWorkRequest);
-
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user != null) {
             String userId = user.getUid();
+            
+            Menu navMenu = navigationView.getMenu();
+            navMenu.findItem(R.id.nav_upload).setVisible(false);
+            navMenu.findItem(R.id.nav_feedback).setVisible(false);
+
+            View headerView = navigationView.getHeaderView(0);
+            TextView navName = headerView.findViewById(R.id.textView9);
+            TextView navEmail = headerView.findViewById(R.id.textView11);
+            ImageView navImage = headerView.findViewById(R.id.nav_header_image);
+            TextView navInitial = headerView.findViewById(R.id.nav_header_initial);
+            
+            navEmail.setText(user.getEmail());
+
             db.collection("users").document(userId).addSnapshotListener((doc, error) -> {
                 if (doc != null && doc.exists()) {
                     User userObj = doc.toObject(User.class);
                     if (userObj != null) {
                         ((TextView)findViewById(R.id.user_welcome)).setText("Hello, " + userObj.getName() + "!");
+                        navName.setText("Welcome, " + userObj.getName());
+                        
+                        // Handle Header Initial/Image
+                        if (userObj.getName() != null && !userObj.getName().isEmpty()) {
+                            navInitial.setText(userObj.getName().substring(0, 1).toUpperCase());
+                        }
+
+                        if (userObj.getImageUrl() != null && !userObj.getImageUrl().isEmpty()) {
+                            navInitial.setVisibility(View.GONE);
+                            navImage.setVisibility(View.VISIBLE);
+                            navImage.setPadding(0,0,0,0);
+                            Glide.with(DomainActivity.this)
+                                    .load(userObj.getImageUrl())
+                                    .apply(RequestOptions.circleCropTransform())
+                                    .into(navImage);
+                        } else {
+                            navInitial.setVisibility(View.VISIBLE);
+                            navImage.setVisibility(View.GONE);
+                        }
+
+                        boolean isAdmin = userObj.isAdmin() || ADMIN_EMAIL.equalsIgnoreCase(user.getEmail());
+                        navMenu.findItem(R.id.nav_upload).setVisible(isAdmin);
+                        navMenu.findItem(R.id.nav_feedback).setVisible(isAdmin);
+
                         updateDonorStatus(userObj);
                         subscribeToBloodGroupTopic(userObj.getBloodGroup());
                     }
@@ -153,17 +189,35 @@ public class DomainActivity extends AppCompatActivity {
         }
     }
 
+    private void fetchCarouselFromFirestore() {
+        db.collection("carousel_images").addSnapshotListener((value, error) -> {
+            if (error != null) {
+                Log.e(TAG, "Listen failed.", error);
+                return;
+            }
+
+            imageUris.clear();
+            if (value != null) {
+                for (QueryDocumentSnapshot doc : value) {
+                    String url = doc.getString("url");
+                    if (url != null) imageUris.add(url);
+                }
+            }
+            
+            if (imageUris.isEmpty()) {
+                imageUris.add("https://i.ibb.co/v4mS888/blood-donation-tips.jpg");
+            }
+            
+            imageAdapter.notifyDataSetChanged();
+            currentItem = 0;
+            viewPager.setCurrentItem(0, false);
+        });
+    }
+
     private void subscribeToBloodGroupTopic(String bloodGroup) {
         if (bloodGroup == null || bloodGroup.isEmpty() || bloodGroup.equals("Select Blood Group")) return;
-        
-        // Sanitize topic name: "A+" -> "A_POSITIVE", "O-" -> "O_NEGATIVE"
         String topic = bloodGroup.replace("+", "_POSITIVE").replace("-", "_NEGATIVE");
-        FirebaseMessaging.getInstance().subscribeToTopic(topic)
-            .addOnCompleteListener(task -> {
-                if (task.isSuccessful()) {
-                    Log.d("FCM", "Subscribed to topic: " + topic);
-                }
-            });
+        FirebaseMessaging.getInstance().subscribeToTopic(topic);
     }
 
     private void listenForActiveRequest(String userId) {
@@ -173,18 +227,6 @@ public class DomainActivity extends AppCompatActivity {
             .addSnapshotListener((value, error) -> {
                 if (value != null && !value.isEmpty()) {
                     requestStatusCard.setVisibility(View.VISIBLE);
-                    com.google.firebase.firestore.DocumentSnapshot doc = value.getDocuments().get(0);
-                    Receiver receiver = doc.toObject(Receiver.class);
-                    if (receiver != null) {
-                        int helpCount = (receiver.getResponderIds() != null) ? receiver.getResponderIds().size() : 0;
-                        if (helpCount > 0) {
-                            requestStatusTitle.setText(helpCount + " Donors are coming to help!");
-                            requestStatusSubtitle.setText("Contact details sent to your SMS.");
-                        } else {
-                            requestStatusTitle.setText("SOS Active: Finding Donors...");
-                            requestStatusSubtitle.setText("We notified nearby " + receiver.getBloodGroup() + " donors.");
-                        }
-                    }
                 } else {
                     requestStatusCard.setVisibility(View.GONE);
                 }
@@ -196,38 +238,8 @@ public class DomainActivity extends AppCompatActivity {
             donorStatusCard.setVisibility(View.GONE);
             return;
         }
-
         donorStatusCard.setVisibility(View.VISIBLE);
-        String lastDonation = user.getLastDonationDate();
-        
-        if (lastDonation == null || lastDonation.isEmpty()) {
-            donorStatusTitle.setText("Status: Ready to Save Lives");
-            donorStatusTitle.setTextColor(Color.parseColor("#2E7D32"));
-            donorStatusCard.setCardBackgroundColor(Color.parseColor("#E8F5E9"));
-            donorStatusSubtitle.setText("You are eligible to donate.");
-            return;
-        }
-
-        try {
-            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-            Date lastDate = sdf.parse(lastDonation);
-            long days = TimeUnit.DAYS.convert(new Date().getTime() - lastDate.getTime(), TimeUnit.MILLISECONDS);
-            int waitDays = "Male".equalsIgnoreCase(user.getGender()) ? 90 : 120;
-            
-            if (days < waitDays) {
-                donorStatusCard.setCardBackgroundColor(Color.parseColor("#FFF5F5"));
-                donorStatusTitle.setText("Status: Recovering");
-                donorStatusTitle.setTextColor(Color.RED);
-                donorStatusSubtitle.setText("Eligible in " + (waitDays - days) + " days.");
-            } else {
-                donorStatusCard.setCardBackgroundColor(Color.parseColor("#E8F5E9"));
-                donorStatusTitle.setText("Status: Eligible");
-                donorStatusTitle.setTextColor(Color.parseColor("#2E7D32"));
-                donorStatusSubtitle.setText("You are ready to donate again!");
-            }
-        } catch (ParseException e) {
-            donorStatusCard.setVisibility(View.GONE);
-        }
+        donorStatusTitle.setText("Status: Ready to Save Lives");
     }
 
     private void checkAndRequestPermissions() {
@@ -237,40 +249,8 @@ public class DomainActivity extends AppCompatActivity {
     }
 
     private void handleLogout() {
-        // Unsubscribe from topic on logout to prevent notifications for other users
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user != null) {
-            db.collection("users").document(user.getUid()).get().addOnSuccessListener(doc -> {
-                if (doc.exists()) {
-                    String bloodGroup = doc.getString("bloodGroup");
-                    if (bloodGroup != null) {
-                        String topic = bloodGroup.replace("+", "_POSITIVE").replace("-", "_NEGATIVE");
-                        FirebaseMessaging.getInstance().unsubscribeFromTopic(topic);
-                    }
-                }
-                FirebaseAuth.getInstance().signOut();
-                startActivity(new Intent(DomainActivity.this, LoginActivity.class));
-                finish();
-            });
-        } else {
-            FirebaseAuth.getInstance().signOut();
-            startActivity(new Intent(this, LoginActivity.class));
-            finish();
-        }
-    }
-
-    private void fetchImageUrisFromFirebase() {
-        FirebaseDatabase.getInstance().getReference("images").addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                imageUris.clear();
-                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                    String uri = snapshot.getValue(String.class);
-                    if (uri != null) imageUris.add(uri);
-                }
-                imageAdapter.notifyDataSetChanged();
-            }
-            @Override public void onCancelled(DatabaseError error) {}
-        });
+        FirebaseAuth.getInstance().signOut();
+        startActivity(new Intent(this, LoginActivity.class));
+        finish();
     }
 }

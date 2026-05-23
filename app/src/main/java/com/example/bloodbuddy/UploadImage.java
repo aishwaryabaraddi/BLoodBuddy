@@ -1,13 +1,15 @@
 package com.example.bloodbuddy;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.util.Base64;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
-import android.widget.ImageView;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
@@ -15,30 +17,42 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
-import com.google.firebase.storage.UploadTask;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 
+import org.json.JSONObject;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 public class UploadImage extends AppCompatActivity {
 
     private static final int PICK_IMAGES_REQUEST = 1;
+    private static final String ADMIN_EMAIL = "viju.r@gmail.com";
+    private static final String IMGBB_API_KEY = "34bf0c768f425a2ee5ad2578961d3d23";
+    private static final String TAG = "UploadImage";
 
-    private Button uploadButton;
-    private ImageView addImageView;
+    private MaterialButton btnAddLink, btnUploadGallery;
+    private TextInputEditText etImageUrl;
     private RecyclerView recyclerView;
-    private ArrayList<Uri> imageUris;
-
-    private FirebaseStorage firebaseStorage;
-    private StorageReference storageReference;
-    private DatabaseReference databaseReference;
+    private FirebaseFirestore db;
+    private RequestQueue requestQueue;
+    private ProgressBar progressBar;
+    private View urlInputContainer;
+    private TextView tvToggleUrl;
 
     private List<String> imageUrls;
     private ImageAdapterU imageAdapter;
@@ -48,102 +62,136 @@ public class UploadImage extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.upload_image);
 
-        uploadButton = findViewById(R.id.button4);
-        addImageView = findViewById(R.id.imageView6);
-        recyclerView = findViewById(R.id.recyclerView);
-        imageUris = new ArrayList<>();
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        db = FirebaseFirestore.getInstance();
+        requestQueue = Volley.newRequestQueue(this);
+        
+        if (currentUser == null) {
+            finish();
+            return;
+        }
 
-        firebaseStorage = FirebaseStorage.getInstance();
-        storageReference = firebaseStorage.getReference("images");
-        databaseReference = FirebaseDatabase.getInstance().getReference("images");
+        checkAdminAndInitialize(currentUser);
+
+        btnUploadGallery = findViewById(R.id.button4);
+        btnAddLink = findViewById(R.id.btn_add_link);
+        etImageUrl = findViewById(R.id.et_image_url);
+        recyclerView = findViewById(R.id.recyclerView);
+        progressBar = findViewById(R.id.upload_progress);
+        urlInputContainer = findViewById(R.id.url_input_container);
+        tvToggleUrl = findViewById(R.id.tv_toggle_url);
 
         imageUrls = new ArrayList<>();
         imageAdapter = new ImageAdapterU(this, imageUrls);
-
-        uploadButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                openGallery();
-            }
-        });
-
-        addImageView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                openGallery();
-            }
-        });
-
-        // Initialize RecyclerView with an adapter
         setupRecyclerView();
 
-        // Load existing images from Firebase
-        loadImagesFromFirebase();
+        btnUploadGallery.setOnClickListener(v -> openGallery());
 
-        ImageView imageViewBack = findViewById(R.id.imageView10);
-        imageViewBack.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Navigate back to DomainActivity
-                Intent intent = new Intent(UploadImage.this, DomainActivity.class);
-                startActivity(intent);
+        tvToggleUrl.setOnClickListener(v -> {
+            if (urlInputContainer.getVisibility() == View.GONE) {
+                urlInputContainer.setVisibility(View.VISIBLE);
+                tvToggleUrl.setText("Hide URL input");
+            } else {
+                urlInputContainer.setVisibility(View.GONE);
+                tvToggleUrl.setText("Or use an image URL");
             }
         });
+
+        btnAddLink.setOnClickListener(v -> {
+            String url = etImageUrl.getText().toString().trim();
+            if (!url.isEmpty()) addImageUrlToFirestore(url);
+            else Toast.makeText(this, "Please enter a valid URL", Toast.LENGTH_SHORT).show();
+        });
+
+        loadImagesFromFirestore();
+        findViewById(R.id.imageView10).setOnClickListener(v -> finish());
+    }
+
+    private void checkAdminAndInitialize(FirebaseUser firebaseUser) {
+        db.collection("users").document(firebaseUser.getUid()).get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    boolean isAdmin = false;
+                    if (documentSnapshot.exists()) {
+                        User user = documentSnapshot.toObject(User.class);
+                        if (user != null && user.isAdmin()) isAdmin = true;
+                    }
+                    if (!isAdmin && !ADMIN_EMAIL.equalsIgnoreCase(firebaseUser.getEmail())) {
+                        Toast.makeText(UploadImage.this, "Admin access required", Toast.LENGTH_SHORT).show();
+                        finish();
+                    }
+                });
     }
 
     private void openGallery() {
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
         startActivityForResult(intent, PICK_IMAGES_REQUEST);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == PICK_IMAGES_REQUEST && resultCode == RESULT_OK && data != null && data.getData() != null) {
+            uploadToImgBB(data.getData());
+        }
+    }
 
-        if (requestCode == PICK_IMAGES_REQUEST && resultCode == RESULT_OK && data != null) {
-            if (data.getClipData() != null) {
-                int count = data.getClipData().getItemCount();
-                for (int i = 0; i < count; i++) {
-                    Uri imageUri = data.getClipData().getItemAt(i).getUri();
-                    imageUris.add(imageUri);
-                    uploadImageToFirebase(imageUri);
+    private void uploadToImgBB(Uri uri) {
+        progressBar.setVisibility(View.VISIBLE);
+        btnUploadGallery.setEnabled(false);
+        Toast.makeText(this, "Uploading image...", Toast.LENGTH_SHORT).show();
+        
+        try {
+            Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 70, baos);
+            byte[] imageBytes = baos.toByteArray();
+            String base64Image = Base64.encodeToString(imageBytes, Base64.DEFAULT);
+
+            StringRequest stringRequest = new StringRequest(Request.Method.POST, "https://api.imgbb.com/1/upload?key=" + IMGBB_API_KEY,
+                    response -> {
+                        progressBar.setVisibility(View.GONE);
+                        btnUploadGallery.setEnabled(true);
+                        try {
+                            JSONObject jsonObject = new JSONObject(response);
+                            String url = jsonObject.getJSONObject("data").getString("url");
+                            addImageUrlToFirestore(url);
+                        } catch (Exception e) {
+                            Toast.makeText(this, "Failed to parse response", Toast.LENGTH_SHORT).show();
+                        }
+                    },
+                    error -> {
+                        progressBar.setVisibility(View.GONE);
+                        btnUploadGallery.setEnabled(true);
+                        Toast.makeText(this, "Upload failed: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                    }) {
+                @Override
+                protected Map<String, String> getParams() {
+                    Map<String, String> params = new HashMap<>();
+                    params.put("image", base64Image);
+                    return params;
                 }
-            } else if (data.getData() != null) {
-                Uri imageUri = data.getData();
-                imageUris.add(imageUri);
-                uploadImageToFirebase(imageUri);
-            }
+            };
+            requestQueue.add(stringRequest);
+        } catch (IOException e) {
+            progressBar.setVisibility(View.GONE);
+            btnUploadGallery.setEnabled(true);
+            Log.e(TAG, "Error uploading", e);
         }
     }
 
-    private void uploadImageToFirebase(Uri imageUri) {
-        StorageReference fileRef = storageReference.child(System.currentTimeMillis() + "." + getFileExtension(imageUri));
-        fileRef.putFile(imageUri)
-                .addOnSuccessListener(taskSnapshot -> fileRef.getDownloadUrl().addOnSuccessListener(uri -> {
-                    // Save image URL to database
-                    String imageUrl = uri.toString();
-                    databaseReference.push().setValue(imageUrl);
+    private void addImageUrlToFirestore(String url) {
+        String id = UUID.randomUUID().toString();
+        Map<String, Object> data = new HashMap<>();
+        data.put("id", id);
+        data.put("url", url);
+        data.put("timestamp", System.currentTimeMillis());
 
-                    // Add image URL to local list and update RecyclerView
-                    imageUrls.add(imageUrl);
-                    updateRecyclerView();
-                }))
-                .addOnFailureListener(e -> {
-                    // Handle unsuccessful uploads
-                    Toast.makeText(UploadImage.this, "Upload failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    Log.e("UploadImage", "uploadImageToFirebase: ", e);
-                });
-    }
-
-    private String getFileExtension(Uri uri) {
-        String extension = "";
-        String mimeType = getContentResolver().getType(uri);
-        if (mimeType != null) {
-            String[] parts = mimeType.split("/");
-            extension = parts[parts.length - 1];
-        }
-        return extension;
+        db.collection("carousel_images").document(id).set(data)
+                .addOnSuccessListener(aVoid -> {
+                    etImageUrl.setText("");
+                    Toast.makeText(UploadImage.this, "Carousel updated!", Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e -> Toast.makeText(this, "Firestore error: " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
 
     private void setupRecyclerView() {
@@ -151,28 +199,17 @@ public class UploadImage extends AppCompatActivity {
         recyclerView.setAdapter(imageAdapter);
     }
 
-    private void updateRecyclerView() {
-        imageAdapter.notifyDataSetChanged();
-    }
-
-    private void loadImagesFromFirebase() {
-        databaseReference.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                imageUrls.clear();
-                for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
-                    String imageUrl = postSnapshot.getValue(String.class);
-                    imageUrls.add(imageUrl);
+    private void loadImagesFromFirestore() {
+        db.collection("carousel_images").orderBy("timestamp").addSnapshotListener((value, error) -> {
+            if (error != null) return;
+            imageUrls.clear();
+            if (value != null) {
+                for (QueryDocumentSnapshot doc : value) {
+                    String url = doc.getString("url");
+                    if (url != null) imageUrls.add(url);
                 }
-                updateRecyclerView();
             }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                // Handle database errors
-                Toast.makeText(UploadImage.this, "Failed to load images: " + databaseError.getMessage(), Toast.LENGTH_SHORT).show();
-                Log.e("UploadImage", "onCancelled: ", databaseError.toException());
-            }
+            imageAdapter.notifyDataSetChanged();
         });
     }
 }

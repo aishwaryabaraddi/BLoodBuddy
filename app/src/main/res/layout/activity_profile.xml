@@ -60,35 +60,38 @@
 
             <!-- Profile Image Section -->
             <androidx.cardview.widget.CardView
+                android:id="@+id/profileCard"
                 android:layout_width="120dp"
                 android:layout_height="120dp"
                 android:layout_gravity="center"
                 android:layout_marginTop="16dp"
+                android:layout_marginBottom="32dp"
                 app:cardCornerRadius="60dp"
                 app:cardElevation="8dp"
-                app:cardBackgroundColor="#F5F5F5">
+                app:cardBackgroundColor="#C62828">
 
-                <ImageView
-                    android:id="@+id/imageView5"
+                <FrameLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:scaleType="centerCrop"
-                    android:src="@drawable/account"
-                    app:tint="#C62828" />
-            </androidx.cardview.widget.CardView>
+                    android:layout_height="match_parent">
 
-            <!-- Update Photo Button -->
-            <TextView
-                android:id="@+id/button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_marginTop="8dp"
-                android:layout_marginBottom="24dp"
-                android:text="Update Photo"
-                android:textColor="#C62828"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                    <TextView
+                        android:id="@+id/tvProfileInitial"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:text="U"
+                        android:textColor="#FFFFFF"
+                        android:textSize="44sp"
+                        android:textStyle="bold" />
+
+                    <ImageView
+                        android:id="@+id/imageView5"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        android:visibility="gone" />
+                </FrameLayout>
+            </androidx.cardview.widget.CardView>
 
             <!-- Details Section -->
             <LinearLayout

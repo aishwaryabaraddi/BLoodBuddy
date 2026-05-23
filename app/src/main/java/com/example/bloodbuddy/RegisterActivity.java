@@ -20,6 +20,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.Calendar;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 public class RegisterActivity extends AppCompatActivity {
 
@@ -144,6 +145,25 @@ public class RegisterActivity extends AppCompatActivity {
         spinner.setAdapter(adapter);
     }
 
+    private boolean isValidName(String name) {
+        return name != null && name.trim().length() >= 3 && name.matches("^[a-zA-Z\\s]*$");
+    }
+
+    private boolean isValidEmail(String email) {
+        return email != null && Patterns.EMAIL_ADDRESS.matcher(email).matches() && email.contains(".");
+    }
+
+    private boolean isValidMobile(String phone) {
+        if (phone == null || phone.length() != 10) return false;
+        if (!phone.matches("^[6-9]\\d{9}$")) return false;
+        // Check for dummy repeating numbers like 0000000000, 1111111111, etc.
+        for (int i = 0; i <= 9; i++) {
+            String dummy = String.format(Locale.getDefault(), "%d%d%d%d%d%d%d%d%d%d", i, i, i, i, i, i, i, i, i, i);
+            if (phone.equals(dummy)) return false;
+        }
+        return true;
+    }
+
     private void validateAndRegister() {
         String name = binding.registerName.getText().toString().trim();
         String email = binding.registerEmail.getText().toString().trim();
@@ -159,20 +179,20 @@ public class RegisterActivity extends AppCompatActivity {
         String taluk = binding.spinnerTaluk.getSelectedItem().toString();
         String bloodGroup = binding.spinnerBloodGroup.getSelectedItem().toString();
 
-        if (name.isEmpty()) {
-            binding.registerName.setError("Name is required");
+        if (!isValidName(name)) {
+            binding.registerName.setError("Enter a valid name (min 3 chars, letters only)");
             binding.registerName.requestFocus();
             return;
         }
 
-        if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            binding.registerEmail.setError("Valid email is required");
+        if (!isValidEmail(email)) {
+            binding.registerEmail.setError("Enter a valid email address (e.g. user@gmail.com)");
             binding.registerEmail.requestFocus();
             return;
         }
 
-        if (phone.length() != 10) {
-            binding.registerPhone.setError("10-digit phone number is required");
+        if (!isValidMobile(phone)) {
+            binding.registerPhone.setError("Enter a valid 10-digit mobile number starting with 6-9");
             binding.registerPhone.requestFocus();
             return;
         }
@@ -211,7 +231,7 @@ public class RegisterActivity extends AppCompatActivity {
         setLoading(true);
 
         mAuth.createUserWithEmailAndPassword(email, password)
-                .addOnCompleteListener(task -> {
+                .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
                         FirebaseUser firebaseUser = mAuth.getCurrentUser();
                         if (firebaseUser != null) {

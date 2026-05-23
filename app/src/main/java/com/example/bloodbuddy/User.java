@@ -16,13 +16,13 @@ public class User implements Serializable {
     private String gender;
     private String bloodGroup;
     private String imageUrl;
-    private String dob; // Date of Birth for age verification
+    private String dob; 
     
-    // Advanced Tracking Fields
-    private boolean isDonor;
+    private boolean donor; // Renamed to be Firebase friendly (field name 'donor')
     private String lastDonationDate;
-    private boolean isVerified; // Verified by a Blood Bank
+    private boolean verified; 
     private int totalDonations;
+    private boolean admin; // Renamed to be Firebase friendly (field name 'admin')
 
     public User() {
     }
@@ -37,9 +37,10 @@ public class User implements Serializable {
         this.taluk = taluk;
         this.gender = gender;
         this.bloodGroup = bloodGroup;
-        this.isDonor = false;
-        this.isVerified = false;
+        this.donor = false;
+        this.verified = false;
         this.totalDonations = 0;
+        this.admin = false;
     }
 
     public User(String id, String name, String email, String phone, String state, String district, String taluk, String gender, String bloodGroup, String dob) {
@@ -81,15 +82,18 @@ public class User implements Serializable {
     public String getDob() { return dob; }
     public void setDob(String dob) { this.dob = dob; }
 
-    public boolean isDonor() { return isDonor; }
-    public void setDonor(boolean donor) { isDonor = donor; }
+    public boolean isDonor() { return donor; }
+    public void setDonor(boolean donor) { this.donor = donor; }
 
     public String getLastDonationDate() { return lastDonationDate; }
     public void setLastDonationDate(String lastDonationDate) { this.lastDonationDate = lastDonationDate; }
 
-    public boolean isVerified() { return isVerified; }
-    public void setVerified(boolean verified) { isVerified = verified; }
+    public boolean isVerified() { return verified; }
+    public void setVerified(boolean verified) { this.verified = verified; }
 
     public int getTotalDonations() { return totalDonations; }
     public void setTotalDonations(int totalDonations) { this.totalDonations = totalDonations; }
+
+    public boolean isAdmin() { return admin; }
+    public void setAdmin(boolean admin) { this.admin = admin; }
 }

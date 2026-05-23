@@ -33,6 +33,13 @@ public class FeedbackAdapter extends RecyclerView.Adapter<FeedbackAdapter.Feedba
         holder.tvContact.setText(feedback.contact);
         holder.tvEmail.setText(feedback.email);
         holder.tvFeedback.setText(feedback.feedback);
+        
+        // Set Initial
+        if (feedback.name != null && !feedback.name.isEmpty()) {
+            holder.tvInitial.setText(feedback.name.substring(0, 1).toUpperCase());
+        } else {
+            holder.tvInitial.setText("?");
+        }
     }
 
     @Override
@@ -42,7 +49,7 @@ public class FeedbackAdapter extends RecyclerView.Adapter<FeedbackAdapter.Feedba
 
     static class FeedbackViewHolder extends RecyclerView.ViewHolder {
 
-        TextView tvName, tvContact, tvEmail, tvFeedback;
+        TextView tvName, tvContact, tvEmail, tvFeedback, tvInitial;
 
         FeedbackViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -50,6 +57,7 @@ public class FeedbackAdapter extends RecyclerView.Adapter<FeedbackAdapter.Feedba
             tvContact = itemView.findViewById(R.id.tvContact);
             tvEmail = itemView.findViewById(R.id.tvEmail);
             tvFeedback = itemView.findViewById(R.id.tvFeedback);
+            tvInitial = itemView.findViewById(R.id.tvInitial);
         }
     }
 }

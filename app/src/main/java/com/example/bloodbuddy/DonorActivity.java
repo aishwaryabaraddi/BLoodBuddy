@@ -35,7 +35,11 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+import android.os.Looper;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -62,8 +66,9 @@ public class DonorActivity extends AppCompatActivity {
     private FusedLocationProviderClient fusedLocationClient;
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
 
-    private double currentLatitude;
-    private double currentLongitude;
+    private double currentLatitude  = 0.0;
+    private double currentLongitude = 0.0;
+    private LocationCallback locationCallback;
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
 
     @Override
@@ -140,6 +145,16 @@ public class DonorActivity extends AppCompatActivity {
         spinner.setAdapter(adapter);
     }
 
+    private boolean isValidName(String name) {
+        return name != null && name.trim().length() >= 3 && name.matches("^[a-zA-Z\\s]*$");
+    }
+
+    private boolean isValidMobile(String phone) {
+        if (phone == null || phone.length() != 10) return false;
+        if (!phone.matches("^[6-9]\\d{9}$")) return false;
+        return !phone.matches("(\\d)\\1{9}");
+    }
+
     private void showHealthQuestionnaire() {
         // Pre-validate basic info before showing questionnaire
         if (!validateBasicInfo()) return;
@@ -165,13 +180,35 @@ public class DonorActivity extends AppCompatActivity {
     }
 
     private boolean validateBasicInfo() {
+        String name = etName.getText().toString().trim();
+        String phone = etPhoneNumber.getText().toString().trim();
         String ageStr = etAge.getText().toString().trim();
         String weightStr = etWeight.getText().toString().trim();
         String gender = spinnerGender.getSelectedItem().toString();
         String lastDonated = etLastDonated.getText().toString().trim();
+        String district = spinnerDistrict.getSelectedItem().toString();
+        String taluk = spinnerTaluk.getSelectedItem().toString();
+        String bloodGroup = spinnerBloodGroup.getSelectedItem().toString();
+
+        if (!isValidName(name)) {
+            etName.setError("Enter a valid name (min 3 chars, letters only)");
+            etName.requestFocus();
+            return false;
+        }
+
+        if (!isValidMobile(phone)) {
+            etPhoneNumber.setError("Enter a valid 10-digit mobile number starting with 6-9");
+            etPhoneNumber.requestFocus();
+            return false;
+        }
 
         if (ageStr.isEmpty() || weightStr.isEmpty() || gender.equals("Select Gender")) {
             Toast.makeText(this, "Please fill in Age, Weight, and Gender", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+
+        if (district.equals("Select District") || taluk.equals("Select Taluk") || bloodGroup.equals("Select Blood Group")) {
+            Toast.makeText(this, "Please select District, Taluk and Blood Group", Toast.LENGTH_SHORT).show();
             return false;
         }
 
@@ -230,7 +267,11 @@ public class DonorActivity extends AppCompatActivity {
             currentLatitude, currentLongitude);
 
         db.collection("donors").document(donorId).set(donor)
-            .addOnSuccessListener(aVoid -> showSuccessDialog())
+            .addOnSuccessListener(aVoid -> {
+                // Update User flag in firestore
+                db.collection("users").document(donorId).update("isDonor", true);
+                showSuccessDialog();
+            })
             .addOnFailureListener(e -> {
                 progressBar.setVisibility(View.GONE);
                 btnSubmit.setEnabled(true);
@@ -261,34 +302,109 @@ public class DonorActivity extends AppCompatActivity {
     }
 
     private void requestLocationPermission() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_PERMISSION_REQUEST_CODE);
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    LOCATION_PERMISSION_REQUEST_CODE);
         } else {
             getCurrentLocation();
         }
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                getCurrentLocation();
+            } else {
+                etLocation.setEnabled(true);
+                etLocation.setHint("Location permission denied — type your address");
+                Toast.makeText(this, "Please type your address manually.", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (fusedLocationClient != null && locationCallback != null) {
+            fusedLocationClient.removeLocationUpdates(locationCallback);
+        }
+    }
+
     @SuppressLint("MissingPermission")
     private void getCurrentLocation() {
-        fusedLocationClient.getLastLocation().addOnSuccessListener(this, location -> {
-            if (location != null) {
-                currentLatitude = location.getLatitude();
-                currentLongitude = location.getLongitude();
-                getAddressFromLocation(currentLatitude, currentLongitude);
+        etLocation.setEnabled(false);
+        etLocation.setText("");
+        etLocation.setHint("📍 Detecting your location...");
+
+        // Step 1: try fast cached location first
+        fusedLocationClient.getLastLocation().addOnCompleteListener(task -> {
+            Location cached = (task.isSuccessful()) ? task.getResult() : null;
+            if (cached != null) {
+                onLocationObtained(cached);
+            } else {
+                // Step 2: no cache → request fresh GPS fix
+                requestFreshLocation();
             }
         });
     }
 
-    private void getAddressFromLocation(double latitude, double longitude) {
-        Geocoder geocoder = new Geocoder(this, Locale.getDefault());
-        try {
-            List<Address> addresses = geocoder.getFromLocation(latitude, longitude, 1);
-            if (addresses != null && !addresses.isEmpty()) {
-                etLocation.setText(addresses.get(0).getAddressLine(0));
+    @SuppressLint("MissingPermission")
+    private void requestFreshLocation() {
+        LocationRequest req = LocationRequest.create()
+                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+                .setNumUpdates(1)
+                .setInterval(0);
+
+        locationCallback = new LocationCallback() {
+            @Override
+            public void onLocationResult(LocationResult result) {
+                fusedLocationClient.removeLocationUpdates(locationCallback);
+                if (!result.getLocations().isEmpty()) {
+                    onLocationObtained(result.getLocations().get(0));
+                } else {
+                    runOnUiThread(() -> onLocationFailed());
+                }
             }
-        } catch (IOException e) {
-            Log.e(TAG, "Geocoder failed", e);
-        }
+        };
+        fusedLocationClient.requestLocationUpdates(req, locationCallback, Looper.getMainLooper());
+    }
+
+    private void onLocationObtained(Location location) {
+        currentLatitude  = location.getLatitude();
+        currentLongitude = location.getLongitude();
+
+        // Step 3: reverse-geocode in background (never block UI thread)
+        new Thread(() -> {
+            try {
+                Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+                List<Address> addrs = geocoder.getFromLocation(currentLatitude, currentLongitude, 1);
+                runOnUiThread(() -> {
+                    etLocation.setEnabled(true);
+                    if (addrs != null && !addrs.isEmpty()) {
+                        etLocation.setText(addrs.get(0).getAddressLine(0));
+                    } else {
+                        etLocation.setHint("📍 Location detected (edit if needed)");
+                    }
+                });
+            } catch (IOException e) {
+                Log.e(TAG, "Geocoder failed", e);
+                runOnUiThread(() -> {
+                    etLocation.setEnabled(true);
+                    etLocation.setHint("📍 GPS ready — type address if needed");
+                });
+            }
+        }).start();
+    }
+
+    private void onLocationFailed() {
+        etLocation.setEnabled(true);
+        etLocation.setHint("Could not detect — please type your address");
+        Toast.makeText(this, "GPS unavailable. Please type your address.", Toast.LENGTH_SHORT).show();
     }
 
     private void updateTalukSpinner(String district) {

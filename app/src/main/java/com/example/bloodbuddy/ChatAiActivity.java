@@ -42,14 +42,13 @@ public class ChatAiActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat_ai);
-
-        // Your API Key
-//        String apiKey = "AQ.Ab8RN6JrvpGca5NgvAgf4iFAFliUA3bRAr25tqDCvWJgLHN4gA";
-        String apiKey = "AIzaSyDwnPuC5zgANvhTiRK-MyzOm1xiQFbtzdc";
-
+        // TODO: Replace with a fresh key from https://aistudio.google.com/app/apikey
+        // Key MUST start with "AIza..." — any other format will not work.
+        //String apiKey = "AIzaSyDwnPuC5zgANvhTiRK-MyzOm1xiQFbtzdc";
+        String apiKey ="AIzaSyDLiNezubDiZUE8i9pPXAbfH-vRaTl9CHo";
         try {
-            // "gemini-1.5-flash" is the standard stable model identifier.
-            GenerativeModel gm = new GenerativeModel("gemini-3-flash-preview", apiKey);
+            // gemini-2.5-flash: free tier (5 RPM / 250K TPM) — confirmed on this key.
+            GenerativeModel gm = new GenerativeModel("gemini-2.5-flash", apiKey);
             model = GenerativeModelFutures.from(gm);
         } catch (Exception e) {
             Log.e(TAG, "Error initializing AI model", e);
@@ -115,9 +114,19 @@ public class ChatAiActivity extends AppCompatActivity {
                     Log.e(TAG, "AI Error Detail: ", t);
                     runOnUiThread(() -> {
                         progressBar.setVisibility(View.GONE);
-                        String errorMsg = t.getMessage();
-                        // Showing full error message to debug the 404/403 status
-                        addMessage("AI Error Detail: " + errorMsg, false);
+                        String raw = t.getMessage() != null ? t.getMessage() : t.getClass().getSimpleName();
+                        // Extract just the human-readable part from the API error JSON
+                        String friendlyMsg;
+                        if (raw.contains("\"message\":")) {
+                            try {
+                                int start = raw.indexOf("\"message\":\"") + 11;
+                                int end   = raw.indexOf("\"", start);
+                                friendlyMsg = raw.substring(start, end);
+                            } catch (Exception ignored) { friendlyMsg = raw; }
+                        } else {
+                            friendlyMsg = raw;
+                        }
+                        addMessage("⚠️ " + friendlyMsg, false);
                     });
                 }
             }, executor);

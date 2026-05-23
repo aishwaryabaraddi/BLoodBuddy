@@ -41,56 +41,45 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <!-- Form Area (Matching Registration Style) -->
+        <!-- Form Area -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="24dp">
 
-            <!-- Profile Image Edit -->
+            <!-- Profile Badge (Read Only) -->
             <androidx.cardview.widget.CardView
-                android:id="@+id/cv_profile_image"
                 android:layout_width="100dp"
                 android:layout_height="100dp"
                 android:layout_gravity="center"
-                android:layout_marginBottom="12dp"
+                android:layout_marginBottom="32dp"
                 app:cardCornerRadius="50dp"
                 app:cardElevation="4dp"
-                app:cardBackgroundColor="#F5F5F5">
+                app:cardBackgroundColor="#C62828">
 
-                <ImageView
-                    android:id="@+id/edit_profile_image"
+                <FrameLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:scaleType="centerCrop"
-                    android:src="@drawable/account"
-                    android:padding="16dp"
-                    app:tint="#C62828" />
+                    android:layout_height="match_parent">
 
-                <!-- Camera Overlay Icon -->
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:background="#4D000000" />
+                    <TextView
+                        android:id="@+id/tvEditProfileInitial"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:text="U"
+                        android:textColor="#FFFFFF"
+                        android:textSize="40sp"
+                        android:textStyle="bold" />
 
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_gravity="center"
-                    app:srcCompat="@drawable/baseline_edit_24"
-                    app:tint="@color/white" />
+                    <ImageView
+                        android:id="@+id/edit_profile_image"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        android:visibility="gone" />
+                </FrameLayout>
             </androidx.cardview.widget.CardView>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_marginBottom="32dp"
-                android:text="Tap to change photo"
-                android:textColor="#C62828"
-                android:textSize="12sp"
-                android:textStyle="bold" />
 
             <!-- Full Name -->
             <TextView

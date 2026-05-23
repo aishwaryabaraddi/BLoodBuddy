@@ -12,6 +12,9 @@ firebaseAuth = "23.0.0"
 toolsCore = "1.0.0-alpha08"
 firebaseFirestore = "25.0.0"
 generativeai = "0.9.0"
+# NOTE: Check https://maven.google.com for the latest — search "generativeai"
+# Last known working: 0.9.0. Bump to a newer version if available to fix
+# the MissingFieldException serialization bug in error responses.
 firebaseVertexai = "16.5.0"
 
 [libraries]

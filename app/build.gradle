@@ -74,7 +74,7 @@ dependencies {
     implementation 'com.google.android.gms:play-services-maps:18.2.0'
     implementation 'org.osmdroid:osmdroid-android:6.1.18'
 
-    implementation 'com.esri.arcgisruntime:arcgis-android:100.15.0'
+    // ArcGIS removed — replaced with OSMDroid (free, no watermark)
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
     implementation 'com.android.volley:volley:1.2.1'

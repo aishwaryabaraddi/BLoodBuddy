@@ -10,19 +10,36 @@
 
     <!-- Profile Icon / Logo Container -->
     <androidx.cardview.widget.CardView
+        android:id="@+id/nav_header_card"
         android:layout_width="72dp"
         android:layout_height="72dp"
         app:cardCornerRadius="36dp"
         app:cardElevation="0dp"
         app:cardBackgroundColor="#33FFFFFF">
 
-        <ImageView
-            android:id="@+id/nav_header_image"
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:padding="16dp"
-            android:src="@drawable/account"
-            app:tint="@color/white" />
+            android:layout_height="match_parent">
+
+            <TextView
+                android:id="@+id/nav_header_initial"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="B"
+                android:textColor="@color/white"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/nav_header_image"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="16dp"
+                android:src="@drawable/account"
+                app:tint="@color/white" />
+        </FrameLayout>
     </androidx.cardview.widget.CardView>
 
     <!-- Welcome Message -->
