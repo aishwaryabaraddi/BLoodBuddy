@@ -13,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -24,6 +25,7 @@ import java.util.UUID;
 public class UserFeedback extends AppCompatActivity {
 
     private TextInputEditText etName, etContact, etEmail, etFeedback;
+    private TextInputLayout tilName, tilContact, tilEmail, tilFeedback;
     private MaterialButton btnSubmit;
     private FirebaseFirestore db;
 
@@ -34,6 +36,10 @@ public class UserFeedback extends AppCompatActivity {
 
         db = FirebaseFirestore.getInstance();
 
+        tilName = findViewById(R.id.til_name);
+        tilContact = findViewById(R.id.til_contact);
+        tilEmail = findViewById(R.id.til_email);
+        tilFeedback = findViewById(R.id.til_feedback);
         etName = findViewById(R.id.et_name);
         etContact = findViewById(R.id.et_contact);
         etEmail = findViewById(R.id.et_email);
@@ -73,16 +79,31 @@ public class UserFeedback extends AppCompatActivity {
         String email = etEmail.getText().toString().trim();
         String feedbackMsg = etFeedback.getText().toString().trim();
 
+        tilName.setError(null);
+        tilContact.setError(null);
+        tilEmail.setError(null);
+        tilFeedback.setError(null);
+
         if (TextUtils.isEmpty(name) || name.length() < 3) {
-            etName.setError("Valid name required");
+            tilName.setError("Valid name required");
+            etName.requestFocus();
             return;
         }
-        if (TextUtils.isEmpty(contact) || contact.length() != 10) {
-            etContact.setError("10-digit mobile required");
+        if (TextUtils.isEmpty(contact) || contact.length() != 10
+                || !contact.matches("^[6-9]\\d{9}$")) {
+            tilContact.setError("Enter a valid 10-digit mobile number");
+            etContact.requestFocus();
+            return;
+        }
+        if (TextUtils.isEmpty(email)
+                || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            tilEmail.setError("Enter a valid email address");
+            etEmail.requestFocus();
             return;
         }
         if (TextUtils.isEmpty(feedbackMsg)) {
-            etFeedback.setError("Please enter your message");
+            tilFeedback.setError("Please enter your message");
+            etFeedback.requestFocus();
             return;
         }
 

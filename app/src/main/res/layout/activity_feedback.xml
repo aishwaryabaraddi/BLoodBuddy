@@ -104,12 +104,14 @@
 
                     <!-- Input Fields -->
                     <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/til_name"
                         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="16dp"
                         android:hint="Full Name"
                         app:boxStrokeColor="#C62828"
+                        app:errorEnabled="true"
                         app:hintTextColor="#C62828"
                         app:startIconDrawable="@drawable/account"
                         app:startIconTint="#C62828">
@@ -123,12 +125,14 @@
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/til_contact"
                         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="16dp"
                         android:hint="Phone Number"
                         app:boxStrokeColor="#C62828"
+                        app:errorEnabled="true"
                         app:hintTextColor="#C62828"
                         app:startIconDrawable="@drawable/baseline_call_24"
                         app:startIconTint="#C62828">
@@ -142,12 +146,14 @@
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/til_email"
                         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="16dp"
                         android:hint="Email Address"
                         app:boxStrokeColor="#C62828"
+                        app:errorEnabled="true"
                         app:hintTextColor="#C62828"
                         app:startIconDrawable="@drawable/baseline_mail_24"
                         app:startIconTint="#C62828">
@@ -161,12 +167,14 @@
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/til_feedback"
                         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="32dp"
                         android:hint="Your Message"
                         app:boxStrokeColor="#C62828"
+                        app:errorEnabled="true"
                         app:hintTextColor="#C62828">
 
                         <com.google.android.material.textfield.TextInputEditText
