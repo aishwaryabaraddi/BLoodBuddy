@@ -2,558 +2,417 @@ package com.example.bloodbuddy;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
-import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.MotionEvent;
 import android.view.View;
-import android.widget.Button;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.ScrollView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.cardview.widget.CardView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import com.esri.arcgisruntime.ArcGISRuntimeEnvironment;
-import com.esri.arcgisruntime.concurrent.ListenableFuture;
-import com.esri.arcgisruntime.geometry.Geometry;
-import com.esri.arcgisruntime.geometry.GeometryEngine;
-import com.esri.arcgisruntime.geometry.Point;
-import com.esri.arcgisruntime.geometry.Polygon;
-import com.esri.arcgisruntime.geometry.SpatialReferences;
-import com.esri.arcgisruntime.loadable.LoadStatus;
-import com.esri.arcgisruntime.mapping.ArcGISMap;
-import com.esri.arcgisruntime.mapping.BasemapStyle;
-import com.esri.arcgisruntime.mapping.Viewpoint;
-import com.esri.arcgisruntime.mapping.view.Callout;
-import com.esri.arcgisruntime.mapping.view.DefaultMapViewOnTouchListener;
-import com.esri.arcgisruntime.mapping.view.Graphic;
-import com.esri.arcgisruntime.mapping.view.GraphicsOverlay;
-import com.esri.arcgisruntime.mapping.view.IdentifyGraphicsOverlayResult;
-import com.esri.arcgisruntime.location.LocationDataSource;
-import com.esri.arcgisruntime.mapping.view.MapView;
-import com.esri.arcgisruntime.symbology.PictureMarkerSymbol;
-import com.esri.arcgisruntime.tasks.networkanalysis.Route;
-import com.esri.arcgisruntime.tasks.networkanalysis.RouteParameters;
-import com.esri.arcgisruntime.tasks.networkanalysis.RouteResult;
-import com.esri.arcgisruntime.tasks.networkanalysis.RouteTask;
-import com.esri.arcgisruntime.symbology.SimpleLineSymbol;
-import com.esri.arcgisruntime.tasks.networkanalysis.Stop;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import java.util.Arrays;
+import org.osmdroid.config.Configuration;
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import org.osmdroid.util.GeoPoint;
+import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.FolderOverlay;
+import org.osmdroid.views.overlay.Marker;
+import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider;
+import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
 
 public class MapActivity extends AppCompatActivity {
 
     private static final String TAG = "MapActivity";
-//    private static final String ROUTE_SERVICE_URL = "https://sampleserver6.arcgisonline.com/arcgis/rest/services/NetworkAnalysis/SanDiego/NAServer/Route";
+    private static final int LOCATION_PERMISSION_CODE = 1;
+    private static final double RADIUS_KM = 50.0;
 
-    private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
-    private static final double BUFFER_DISTANCE_KM = 20.0;
-
-    private RouteTask routeTask;
-    private RouteParameters routeParameters;
+    // Map
     private MapView mMapView;
-    private FusedLocationProviderClient fusedLocationClient;
-    private DatabaseReference donorsRef;
-    private DatabaseReference receiversRef;
-    private GraphicsOverlay graphicsOverlay;
-    private LinearLayout donorListLayout;
-    private LinearLayout receiverListLayout;
-    private ScrollView donorListScrollView;
-    private ScrollView receiverListScrollView;
-    private ImageView legendIconDonors;
-    private ImageView legendIconReceivers;
+    private MyLocationNewOverlay myLocationOverlay;
+    private FolderOverlay donorOverlay   = new FolderOverlay();
+    private FolderOverlay requestOverlay = new FolderOverlay();
+    private boolean donorsVisible   = true;
+    private boolean requestsVisible = true;
 
-    @SuppressLint("MissingInflatedId")
+    // UI
+    private TextView tvMapStats;
+    private TextView tvDonorCount;
+    private TextView tvRequestCount;
+    private CardView personDetailsCard;
+    private TextView tvCardName, tvCardBloodBadge, tvCardType, tvCardPhone;
+    private ProgressBar mapProgressBar;
+    private View legendIconCard;   // parent CardView of donor button
+    private View requestIconCard;  // parent CardView of request button
+
+    // Data
+    private int donorCount   = 0;
+    private int requestCount = 0;
+    private String currentPhone = "";
+
+    private FusedLocationProviderClient fusedLocationClient;
+    private FirebaseFirestore db;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Configuration.getInstance().setUserAgentValue(getPackageName());
+        Configuration.getInstance().setOsmdroidTileCache(getCacheDir());
         super.onCreate(savedInstanceState);
         setContentView(R.layout.map);
 
-        ArcGISRuntimeEnvironment.setApiKey("AAPK2ee3c403aac24a01a4368148cd8e0019e654qj508BtZjGPXLBCeSpBOyK4yRvxF8w3U46FYJhutXcTJcwTee8qTnV6P3oHy");
-        mMapView = findViewById(R.id.mapView);
+        mMapView         = findViewById(R.id.mapView);
+        tvMapStats       = findViewById(R.id.tvMapStats);
+        tvDonorCount     = findViewById(R.id.tvDonorCount);
+        tvRequestCount   = findViewById(R.id.tvRequestCount);
+        personDetailsCard = findViewById(R.id.personDetailsCard);
+        tvCardName       = findViewById(R.id.tvCardName);
+        tvCardBloodBadge = findViewById(R.id.tvCardBloodBadge);
+        tvCardType       = findViewById(R.id.tvCardType);
+        tvCardPhone      = findViewById(R.id.tvCardPhone);
+        mapProgressBar   = findViewById(R.id.mapProgressBar);
+
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-        donorsRef = FirebaseDatabase.getInstance().getReference().child("donors");
-        receiversRef = FirebaseDatabase.getInstance().getReference().child("receivers");
+        db = FirebaseFirestore.getInstance();
 
-        graphicsOverlay = new GraphicsOverlay();
-        mMapView.getGraphicsOverlays().add(graphicsOverlay);
+        // OSMDroid setup
+        mMapView.setTileSource(TileSourceFactory.MAPNIK);
+        mMapView.setMultiTouchControls(true);
+        mMapView.getController().setZoom(13.0);
 
-        // Initialize the RouteTask and RouteParameters
-        routeTask = new RouteTask(this, "https://sampleserver6.arcgisonline.com/arcgis/rest/services/NetworkAnalysis/SanDiego/NAServer/Route");
-        routeTask.loadAsync();
-        routeTask.addDoneLoadingListener(() -> {
-            if (routeTask.getLoadStatus() == LoadStatus.LOADED) {
-                try {
-                    routeParameters = routeTask.createDefaultParametersAsync().get();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+        // My location overlay — custom red map-pin icon instead of default white arrow
+        myLocationOverlay = new MyLocationNewOverlay(new GpsMyLocationProvider(this), mMapView);
+        myLocationOverlay.enableMyLocation();
+        setLocationPinIcon();
+        mMapView.getOverlays().add(myLocationOverlay);
+
+        // Add overlay groups (for toggle control)
+        mMapView.getOverlays().add(donorOverlay);
+        mMapView.getOverlays().add(requestOverlay);
+
+        // Buttons
+        findViewById(R.id.imageViewBack).setOnClickListener(v -> finish());
+        personDetailsCard.setVisibility(View.GONE);
+
+        // Filter buttons — toggle markers on/off
+        legendIconCard  = (View) ((View) findViewById(R.id.legendIcon)).getParent();
+        requestIconCard = (View) ((View) findViewById(R.id.legendIconReceivers)).getParent();
+
+        findViewById(R.id.legendIcon).setOnClickListener(v -> toggleDonors());
+        findViewById(R.id.legendIconReceivers).setOnClickListener(v -> toggleRequests());
+
+        // Close detail card
+        findViewById(R.id.btnCloseCard).setOnClickListener(v ->
+                personDetailsCard.setVisibility(View.GONE));
+
+        // Call button
+        findViewById(R.id.btnCall).setOnClickListener(v -> {
+            if (!currentPhone.isEmpty()) {
+                Intent call = new Intent(Intent.ACTION_DIAL,
+                        Uri.parse("tel:" + currentPhone));
+                startActivity(call);
+            }
+        });
+
+        setupBottomNav();
+        checkPermissions();
+    }
+
+    // ─── Location pin icon ────────────────────────────────────────────────────
+
+    /** Converts the @drawable/nearby vector to a red Bitmap and sets it as the
+     *  "current location" marker on MyLocationNewOverlay. */
+    private void setLocationPinIcon() {
+        try {
+            Drawable pin = ContextCompat.getDrawable(this, R.drawable.nearby);
+            if (pin == null) return;
+            pin = pin.mutate();
+            pin.setTint(0xFFEC3E3E); // app red
+
+            // 48 dp → pixels
+            int px = Math.round(48 * getResources().getDisplayMetrics().density);
+            Bitmap bmp = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(bmp);
+            pin.setBounds(0, 0, px, px);
+            pin.draw(canvas);
+
+            myLocationOverlay.setPersonIcon(bmp);
+            // Hotspot: tip of the pin is at horizontal-center, bottom edge
+            myLocationOverlay.setPersonHotspot(px / 2.0f, px);
+        } catch (Exception e) {
+            Log.w(TAG, "Could not set custom location icon", e);
+            // Falls back to OSMDroid's default white arrow — no crash
+        }
+    }
+
+    // ─── Navigation ───────────────────────────────────────────────────────────
+
+    private void setupBottomNav() {
+        BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
+        bottomNav.setSelectedItemId(R.id.navigation_map);
+        bottomNav.setOnNavigationItemSelectedListener(item -> {
+            int id = item.getItemId();
+            if (id == R.id.navigation_request_list) {
+                startActivity(new Intent(this, RequestListActivity.class)); finish();
+            } else if (id == R.id.navigation_donor_list) {
+                startActivity(new Intent(this, DisplayDonorActivity.class)); finish();
+            } else if (id == R.id.navigation_feedback) {
+                startActivity(new Intent(this, UserFeedback.class)); finish();
+            }
+            return true;
+        });
+    }
+
+    // ─── Permissions & Location ───────────────────────────────────────────────
+
+    private void checkPermissions() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    LOCATION_PERMISSION_CODE);
+        } else {
+            loadMap();
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private void loadMap() {
+        mapProgressBar.setVisibility(View.VISIBLE);
+        tvMapStats.setVisibility(View.VISIBLE);
+        tvMapStats.setText("📍 Locating you...");
+
+        myLocationOverlay.enableFollowLocation();
+
+        fusedLocationClient.getLastLocation().addOnCompleteListener(task -> {
+            if (task.isSuccessful() && task.getResult() != null) {
+                Location loc = task.getResult();
+                GeoPoint myPoint = new GeoPoint(loc.getLatitude(), loc.getLongitude());
+                mMapView.getController().animateTo(myPoint);
+                mMapView.getController().setZoom(13.0);
+
+                tvMapStats.setText("🔍 Finding donors & requests nearby...");
+                loadDonors(loc.getLatitude(), loc.getLongitude());
+                loadRequests(loc.getLatitude(), loc.getLongitude());
             } else {
-                // Handle the error if the route task fails to load
-                Log.e("RouteTask", "Failed to load RouteTask");
-            }
-        });
-
-
-        donorListLayout = findViewById(R.id.donorListLayout);
-        receiverListLayout = findViewById(R.id.receiverListLayout);
-        donorListScrollView = findViewById(R.id.donorListScrollView);
-        receiverListScrollView = findViewById(R.id.receiverListScrollView);
-        legendIconDonors = findViewById(R.id.legendIcon);
-        legendIconReceivers = findViewById(R.id.legendIconReceivers);
-
-        legendIconDonors.setOnClickListener(view -> toggleDonorListVisibility());
-        legendIconReceivers.setOnClickListener(view -> toggleReceiverListVisibility());
-
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_PERMISSION_REQUEST_CODE);
-        } else {
-            fetchCurrentLocation();
-        }
-
-        ArcGISMap map = new ArcGISMap(BasemapStyle.ARCGIS_TOPOGRAPHIC);
-        mMapView.setMap(map);
-
-        mMapView.setOnTouchListener(new DefaultMapViewOnTouchListener(this, mMapView) {
-            @Override
-            public boolean onSingleTapConfirmed(MotionEvent e) {
-                android.graphics.Point screenPoint = new android.graphics.Point(Math.round(e.getX()), Math.round(e.getY()));
-                ListenableFuture<IdentifyGraphicsOverlayResult> identifyGraphics = mMapView.identifyGraphicsOverlayAsync(graphicsOverlay, screenPoint, 10.0, false);
-                identifyGraphics.addDoneListener(() -> {
-                    try {
-                        IdentifyGraphicsOverlayResult result = identifyGraphics.get();
-                        if (!result.getGraphics().isEmpty()) {
-                            Graphic identifiedGraphic = result.getGraphics().get(0);
-                            if (identifiedGraphic.getAttributes().containsKey("longitude") && identifiedGraphic.getAttributes().containsKey("latitude")) {
-                                showCallout(identifiedGraphic.getGeometry(), identifiedGraphic.getAttributes());
-                            }
-                        }
-                    } catch (Exception ex) {
-                        Log.e(TAG, "Error identifying graphic: " + ex.getMessage());
-                    }
-                });
-                return super.onSingleTapConfirmed(e);
-            }
-        });
-
-        @SuppressLint({"MissingInflatedId", "LocalSuppress"})
-        ImageView imageViewBack = findViewById(R.id.imageViewBack);
-        imageViewBack.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Navigate back to DomainActivity
-                Intent intent = new Intent(MapActivity.this, DomainActivity.class);
-                startActivity(intent);
+                mapProgressBar.setVisibility(View.GONE);
+                tvMapStats.setText("⚠️ Location unavailable. Enable GPS.");
+                Toast.makeText(this, "Enable GPS to see nearby donors.", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    private void toggleDonorListVisibility() {
-        if (donorListScrollView.getVisibility() == View.VISIBLE) {
-            donorListScrollView.setVisibility(View.GONE);
+    // ─── Firebase Loading ─────────────────────────────────────────────────────
+
+    private void loadDonors(double myLat, double myLon) {
+        db.collection("donors").get().addOnCompleteListener(task -> {
+            if (!task.isSuccessful()) {
+                Log.e(TAG, "Failed to load donors", task.getException());
+                checkLoadingDone();
+                return;
+            }
+            donorCount = 0;
+            donorOverlay.getItems().clear();
+
+            for (QueryDocumentSnapshot doc : task.getResult()) {
+                Donor donor = doc.toObject(Donor.class);
+                double dLat = donor.getLatitude();
+                double dLon = donor.getLongitude();
+
+                // Skip if no location stored
+                if (dLat == 0.0 && dLon == 0.0) continue;
+
+                if (withinRadius(myLat, myLon, dLat, dLon)) {
+                    donorCount++;
+                    addMarker(donorOverlay, dLat, dLon,
+                            donor.getName(),
+                            donor.getBloodGroup(),
+                            donor.getPhoneNumber(),
+                            true);
+                }
+            }
+            runOnUiThread(() -> {
+                tvDonorCount.setText(donorCount + " Donors");
+                mMapView.invalidate();
+                checkLoadingDone();
+            });
+        });
+    }
+
+    private void loadRequests(double myLat, double myLon) {
+        db.collection("receivers")
+                .whereEqualTo("active", true)
+                .get()
+                .addOnCompleteListener(task -> {
+            if (!task.isSuccessful()) {
+                Log.e(TAG, "Failed to load requests", task.getException());
+                checkLoadingDone();
+                return;
+            }
+            requestCount = 0;
+            requestOverlay.getItems().clear();
+
+            for (QueryDocumentSnapshot doc : task.getResult()) {
+                Receiver receiver = doc.toObject(Receiver.class);
+                double rLat = receiver.getLatitude();
+                double rLon = receiver.getLongitude();
+
+                if (rLat == 0.0 && rLon == 0.0) continue;
+
+                if (withinRadius(myLat, myLon, rLat, rLon)) {
+                    requestCount++;
+                    addMarker(requestOverlay, rLat, rLon,
+                            receiver.getName(),
+                            receiver.getBloodGroup(),
+                            receiver.getPhoneNumber(),
+                            false);
+                }
+            }
+            runOnUiThread(() -> {
+                tvRequestCount.setText(requestCount + " Requests");
+                mMapView.invalidate();
+                checkLoadingDone();
+            });
+        });
+    }
+
+    private void checkLoadingDone() {
+        runOnUiThread(() -> {
+            mapProgressBar.setVisibility(View.GONE);
+            if (donorCount == 0 && requestCount == 0) {
+                tvMapStats.setText("No donors or requests found within 50 km");
+            } else {
+                tvMapStats.setText("🩸 " + donorCount + " donor"
+                        + (donorCount != 1 ? "s" : "")
+                        + "  •  🆘 " + requestCount + " request"
+                        + (requestCount != 1 ? "s" : "")
+                        + " within 50 km");
+            }
+        });
+    }
+
+    // ─── Map Markers ──────────────────────────────────────────────────────────
+
+    private void addMarker(FolderOverlay overlay, double lat, double lon,
+                           String name, String bloodGroup, String phone, boolean isDonor) {
+        int iconRes = isDonor
+                ? R.drawable.baseline_person_pin_circle_24
+                : R.drawable.blood;
+        Drawable icon = ContextCompat.getDrawable(this, iconRes);
+
+        Marker marker = new Marker(mMapView);
+        marker.setPosition(new GeoPoint(lat, lon));
+        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+        marker.setIcon(icon);
+        marker.setTitle(name); // needed by OSMDroid internally
+
+        marker.setOnMarkerClickListener((m, mapView) -> {
+            showPersonCard(name, bloodGroup, phone, isDonor);
+            return true; // suppress default popup
+        });
+
+        overlay.add(marker);
+    }
+
+    // ─── Detail Card ──────────────────────────────────────────────────────────
+
+    private void showPersonCard(String name, String blood, String phone, boolean isDonor) {
+        tvCardName.setText(name);
+        tvCardBloodBadge.setText(blood);
+        tvCardType.setText(isDonor ? "🩸 Donor" : "🆘 Needs Blood");
+        tvCardPhone.setText(phone);
+        currentPhone = phone;
+        personDetailsCard.setVisibility(View.VISIBLE);
+    }
+
+    // ─── Filter Toggles ───────────────────────────────────────────────────────
+
+    private void toggleDonors() {
+        donorsVisible = !donorsVisible;
+        if (donorsVisible) {
+            if (!mMapView.getOverlays().contains(donorOverlay))
+                mMapView.getOverlays().add(donorOverlay);
+            ((androidx.cardview.widget.CardView) legendIconCard)
+                    .setCardBackgroundColor(getColor(android.R.color.white));
+            ((android.widget.ImageView) findViewById(R.id.legendIcon))
+                    .setImageTintList(android.content.res.ColorStateList.valueOf(0xFFEC3E3E));
+            tvDonorCount.setTextColor(0xFF212121);
         } else {
-            donorListScrollView.setVisibility(View.VISIBLE);
+            mMapView.getOverlays().remove(donorOverlay);
+            ((androidx.cardview.widget.CardView) legendIconCard)
+                    .setCardBackgroundColor(0xFF9E9E9E);
+            ((android.widget.ImageView) findViewById(R.id.legendIcon))
+                    .setImageTintList(android.content.res.ColorStateList.valueOf(0xFFFFFFFF));
+            tvDonorCount.setTextColor(0xFF9E9E9E);
         }
+        mMapView.invalidate();
     }
 
-    private void toggleReceiverListVisibility() {
-        if (receiverListScrollView.getVisibility() == View.VISIBLE) {
-            receiverListScrollView.setVisibility(View.GONE);
+    private void toggleRequests() {
+        requestsVisible = !requestsVisible;
+        if (requestsVisible) {
+            if (!mMapView.getOverlays().contains(requestOverlay))
+                mMapView.getOverlays().add(requestOverlay);
+            ((androidx.cardview.widget.CardView) requestIconCard)
+                    .setCardBackgroundColor(getColor(android.R.color.white));
+            tvRequestCount.setTextColor(0xFF212121);
         } else {
-            receiverListScrollView.setVisibility(View.VISIBLE);
+            mMapView.getOverlays().remove(requestOverlay);
+            ((androidx.cardview.widget.CardView) requestIconCard)
+                    .setCardBackgroundColor(0xFF9E9E9E);
+            tvRequestCount.setTextColor(0xFF9E9E9E);
         }
+        mMapView.invalidate();
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        mMapView.resume();
+    // ─── Helpers ──────────────────────────────────────────────────────────────
+
+    private boolean withinRadius(double lat1, double lon1, double lat2, double lon2) {
+        double R    = 6371;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a    = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                    + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                    * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) <= RADIUS_KM;
     }
 
-    @Override
-    protected void onPause() {
-        super.onPause();
-        mMapView.pause();
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (mMapView != null) {
-            mMapView.dispose();
-        }
-    }
+    // ─── Lifecycle ────────────────────────────────────────────────────────────
 
     @Override
     public void onBackPressed() {
-        if (donorListScrollView.getVisibility() == View.VISIBLE) {
-            donorListScrollView.setVisibility(View.GONE);
-        } else if (receiverListScrollView.getVisibility() == View.VISIBLE) {
-            receiverListScrollView.setVisibility(View.GONE);
+        if (personDetailsCard.getVisibility() == View.VISIBLE) {
+            personDetailsCard.setVisibility(View.GONE);
         } else {
             super.onBackPressed();
         }
     }
 
-    @SuppressLint("MissingPermission")
-    private void fetchCurrentLocation() {
-        fusedLocationClient.getLastLocation().addOnCompleteListener(new OnCompleteListener<Location>() {
-            @Override
-            public void onComplete(@NonNull Task<Location> task) {
-                if (task.isSuccessful() && task.getResult() != null) {
-                    Location location = task.getResult();
-                    updateMapLocation(location.getLatitude(), location.getLongitude());
-                    createBufferAndQuery(location.getLatitude(), location.getLongitude());
-                    addCurrentLocationGraphic(location.getLatitude(), location.getLongitude());
-                } else {
-                    Toast.makeText(MapActivity.this, "Failed to get location", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
-    }
-
-    private void updateMapLocation(double latitude, double longitude) {
-        double scale = 10000;
-        Point currentLocation = new Point(longitude, latitude, SpatialReferences.getWgs84());
-        Viewpoint currentViewpoint = new Viewpoint(currentLocation, scale);
-        mMapView.setViewpoint(currentViewpoint);
-    }
-
-    private void createBufferAndQuery(double latitude, double longitude) {
-        double bufferDistanceMeters = BUFFER_DISTANCE_KM * 1000.0;
-        Point currentLocation = new Point(longitude, latitude, SpatialReferences.getWgs84());
-        Polygon bufferGeometry = GeometryEngine.buffer(currentLocation, bufferDistanceMeters);
-        queryDonorsInBuffer(bufferGeometry);
-        queryReceiversInBuffer(bufferGeometry);
-    }
-
-    private void queryDonorsInBuffer(Polygon bufferGeometry) {
-        Map<String, Donor> donorsMap = new HashMap<>();
-        donorsRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                donorListLayout.removeAllViews();
-                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                    Donor donor = snapshot.getValue(Donor.class);
-                    if (donor != null) {
-                        Point donorLocation = new Point(donor.getLongitude(), donor.getLatitude(), SpatialReferences.getWgs84());
-                        if (GeometryEngine.contains(bufferGeometry, donorLocation)) {
-                            donorsMap.put(snapshot.getKey(), donor);
-                            addDonorGraphic(donorLocation, donor);
-                            addDonorToList(donor);
-                        }
-                    }
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-                Toast.makeText(MapActivity.this, "Failed to query donors: " + databaseError.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void queryReceiversInBuffer(Polygon bufferGeometry) {
-        Map<String, Receiver> receiversMap = new HashMap<>();
-        receiversRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                receiverListLayout.removeAllViews();
-                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                    Receiver receiver = snapshot.getValue(Receiver.class);
-                    if (receiver != null) {
-                        Point receiverLocation = new Point(receiver.getLongitude(), receiver.getLatitude(), SpatialReferences.getWgs84());
-                        if (GeometryEngine.contains(bufferGeometry, receiverLocation)) {
-                            receiversMap.put(snapshot.getKey(), receiver);
-                            addReceiverGraphic(receiverLocation, receiver);
-                            addReceiverToList(receiver);
-                        }
-                    }
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-                Toast.makeText(MapActivity.this, "Failed to query receivers: " + databaseError.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private Bitmap getBitmapFromDrawable(Drawable drawable) {
-        if (drawable instanceof BitmapDrawable) {
-            return ((BitmapDrawable) drawable).getBitmap();
-        } else {
-            int width = drawable.getIntrinsicWidth() > 0 ? drawable.getIntrinsicWidth() : 100;
-            int height = drawable.getIntrinsicHeight() > 0 ? drawable.getIntrinsicHeight() : 100;
-            Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-            Canvas canvas = new Canvas(bitmap);
-            drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
-            drawable.draw(canvas);
-            return bitmap;
-        }
-    }
-
-
-    private void addDonorGraphic(Point donorLocation, Donor donor) {
-        Drawable drawable = ContextCompat.getDrawable(this, R.drawable.baseline_person_pin_circle_24);
-        Bitmap bitmap = getBitmapFromDrawable(drawable);
-        PictureMarkerSymbol symbol = new PictureMarkerSymbol(new BitmapDrawable(getResources(), bitmap));
-        symbol.loadAsync();
-        symbol.addDoneLoadingListener(() -> {
-            Graphic graphic = new Graphic(donorLocation, symbol);
-            Map<String, Object> attributes = new HashMap<>();
-            attributes.put("name", donor.getName());
-            attributes.put("phone", donor.getPhoneNumber());
-            attributes.put("bloodGroup", donor.getBloodGroup());
-            attributes.put("latitude", donor.getLatitude());
-            attributes.put("longitude", donor.getLongitude());
-            graphic.getAttributes().putAll(attributes);
-            graphicsOverlay.getGraphics().add(graphic);
-        });
-    }
-
-    private void addReceiverGraphic(Point receiverLocation, Receiver receiver) {
-        Drawable drawable = ContextCompat.getDrawable(this, R.drawable.info);
-        Bitmap bitmap = getBitmapFromDrawable(drawable);
-        PictureMarkerSymbol symbol = new PictureMarkerSymbol(new BitmapDrawable(getResources(), bitmap));
-        symbol.loadAsync();
-        symbol.addDoneLoadingListener(() -> {
-            Graphic graphic = new Graphic(receiverLocation, symbol);
-            Map<String, Object> attributes = new HashMap<>();
-            attributes.put("name", receiver.getName());
-            attributes.put("latitude", receiver.getLatitude());
-            attributes.put("longitude", receiver.getLongitude());
-            graphic.getAttributes().putAll(attributes);
-            graphicsOverlay.getGraphics().add(graphic);
-        });
-    }
-
-    private void addDonorToList(Donor donor) {
-        // Create a new LinearLayout to hold donor details and buttons
-        LinearLayout donorItemLayout = new LinearLayout(this);
-        donorItemLayout.setOrientation(LinearLayout.VERTICAL);
-        donorItemLayout.setPadding(10, 10, 10, 10);
-        donorItemLayout.setBackgroundColor(Color.WHITE);
-
-        // Get screen width in pixels
-        DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
-        int screenWidth = displayMetrics.widthPixels;
-
-        // Convert 50dp to pixels
-        int marginInDp = (int) (100 * displayMetrics.density + 0.5f);
-
-        // Set the width of the donorItemLayout
-        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
-                screenWidth - marginInDp, LinearLayout.LayoutParams.WRAP_CONTENT);
-        layoutParams.setMargins(0, 0, 0, 10);
-        donorItemLayout.setLayoutParams(layoutParams);
-
-        // Create a TextView for donor details
-        TextView donorView = new TextView(this);
-        donorView.setText("Name: " + donor.getName() +
-                "\nContact: " + donor.getPhoneNumber() +
-                "\nBlood Group: " + donor.getBloodGroup() +
-                "\nLongitude: " + donor.getLongitude() +
-                "\nLatitude: " + donor.getLatitude());
-        donorView.setPadding(10, 10, 10, 10);
-        donorItemLayout.addView(donorView);
-
-        // Create a button for calling the donor
-        Button callButton = new Button(this);
-        callButton.setText("Call");
-        callButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent callIntent = new Intent(Intent.ACTION_DIAL);
-                callIntent.setData(Uri.parse("tel:" + donor.getPhoneNumber()));
-                startActivity(callIntent);
-            }
-        });
-        donorItemLayout.addView(callButton);
-
-        // Create a button for navigating to the donor's location
-        Button navigateButton = new Button(this);
-        navigateButton.setText("Navigate");
-        navigateButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Assuming you have the latitude and longitude of the donor's location
-                double latitude = donor.getLatitude();
-                double longitude = donor.getLongitude();
-                String uri = "https://www.google.com/maps/dir/?api=1&destination=" + latitude + "," + longitude;
-                Intent navigateIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(uri));
-                navigateIntent.setPackage("com.google.android.apps.maps");
-                startActivity(navigateIntent);
-            }
-        });
-        donorItemLayout.addView(navigateButton);
-
-        // Add the entire layout (details + buttons) to the main donor list layout
-        donorListLayout.addView(donorItemLayout);
-    }
-
-    private void addReceiverToList(Receiver receiver) {
-        LinearLayout receiverItemLayout = new LinearLayout(this);
-        receiverItemLayout.setOrientation(LinearLayout.VERTICAL);
-        receiverItemLayout.setPadding(10, 10, 10, 10);
-        receiverItemLayout.setBackgroundColor(Color.WHITE);
-
-        // Get screen width in pixels
-        DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
-        int screenWidth = displayMetrics.widthPixels;
-
-        // Convert 50dp to pixels
-        int marginInDp = (int) (100 * displayMetrics.density + 0.5f);
-
-        // Set the width of the receiverItemLayout
-        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
-                screenWidth - marginInDp, LinearLayout.LayoutParams.WRAP_CONTENT);
-        layoutParams.setMargins(0, 0, 0, 10);
-        receiverItemLayout.setLayoutParams(layoutParams);
-
-        // Create a TextView for receiver details
-        TextView receiverView = new TextView(this);
-        receiverView.setText("Name: " + receiver.getName() +
-                "\nBlood Group: " + receiver.getBloodGroup() +
-                "\nLocation: " + receiver.getLocation() +
-                "\nLongitude: " + receiver.getLongitude() +
-                "\nLatitude: " + receiver.getLatitude());
-        receiverView.setPadding(10, 10, 10, 10);
-        receiverItemLayout.addView(receiverView);
-
-        // Create a button for navigating to the receiver's location
-        Button navigateButton = new Button(this);
-        navigateButton.setText("Navigate");
-        navigateButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Assuming you have the latitude and longitude of the receiver's location
-                double latitude = receiver.getLatitude();
-                double longitude = receiver.getLongitude();
-
-                // Perform routing within the app using Esri ArcGIS SDK
-                performRouting(latitude, longitude);
-            }
-        });
-        receiverItemLayout.addView(navigateButton);
-
-        // Add the entire layout (details + button) to the main receiver list layout
-        receiverListLayout.addView(receiverItemLayout);
-    }
-
-    private void performRouting(double latitude, double longitude) {
-        if (routeParameters == null) {
-            Toast.makeText(this, "Route parameters not initialized. Please try again later.", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        try {
-            // Get the current location of the user (replace with actual user location)
-            double userLongitude=0;
-            double userLatitude=0;
-            Point currentLocation = new Point(userLongitude, userLatitude, SpatialReferences.getWgs84());
-
-            // Define the receiver location
-            Point receiverLocation = new Point(longitude, latitude, SpatialReferences.getWgs84());
-
-            // Create stops for the route
-            List<Stop> stops = new ArrayList<>();
-            stops.add(new Stop(currentLocation));
-            stops.add(new Stop(receiverLocation));
-            routeParameters.setStops(stops);
-
-            // Solve the route
-            ListenableFuture<RouteResult> routeResultFuture = routeTask.solveRouteAsync(routeParameters);
-            routeResultFuture.addDoneListener(() -> {
-                try {
-                    RouteResult routeResult = routeResultFuture.get();
-                    Route route = routeResult.getRoutes().get(0);
-
-                    // Create a graphic for the route
-                    SimpleLineSymbol routeSymbol = new SimpleLineSymbol(SimpleLineSymbol.Style.SOLID, Color.BLUE, 5.0f);
-                    Graphic routeGraphic = new Graphic(route.getRouteGeometry(), routeSymbol);
-                    graphicsOverlay.getGraphics().add(routeGraphic);
-
-                    // Zoom to the route
-                    mMapView.setViewpointGeometryAsync(route.getRouteGeometry().getExtent(), 100);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            });
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void addCurrentLocationGraphic(double latitude, double longitude) {
-        Point currentLocation = new Point(longitude, latitude, SpatialReferences.getWgs84());
-        Drawable drawable = ContextCompat.getDrawable(this, com.esri.arcgisruntime.R.drawable.arcgisruntime_location_display_default_symbol);
-        Bitmap bitmap = getBitmapFromDrawable(drawable);
-        PictureMarkerSymbol symbol = new PictureMarkerSymbol(new BitmapDrawable(getResources(), bitmap));
-        symbol.loadAsync();
-        symbol.addDoneLoadingListener(() -> {
-            Graphic graphic = new Graphic(currentLocation, symbol);
-            graphicsOverlay.getGraphics().add(graphic);
-        });
-    }
-
-    private void showCallout(com.esri.arcgisruntime.geometry.Geometry geometry, Map<String, Object> attributes) {
-        // Create a callout and set its content
-        Callout callout = mMapView.getCallout();
-        callout.setLocation((Point) geometry);
-        callout.setContent(new androidx.appcompat.widget.AppCompatTextView(MapActivity.this) {{
-            setText("Name: " + attributes.get("name") +
-                    "\nPhone: " + attributes.get("phone") +
-                    "\nBlood Group: " + attributes.get("bloodGroup") +
-                    "\nLongitude: " + attributes.get("longitude") +
-                    "\nLatitude: " + attributes.get("latitude"));
-            setPadding(10, 10, 10, 10);
-            setBackgroundColor(0xFFFFFFFF);
-        }});
-        callout.show();
-    }
-
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                fetchCurrentLocation();
-            } else {
-                Log.e(TAG, "Location permission denied");
-                Toast.makeText(this, "Location permission denied", Toast.LENGTH_SHORT).show();
-            }
+    public void onRequestPermissionsResult(int code, @NonNull String[] perms, @NonNull int[] results) {
+        super.onRequestPermissionsResult(code, perms, results);
+        if (code == LOCATION_PERMISSION_CODE
+                && results.length > 0
+                && results[0] == PackageManager.PERMISSION_GRANTED) {
+            loadMap();
         }
     }
-}
 
+    @Override protected void onResume()  { super.onResume();  mMapView.onResume();  }
+    @Override protected void onPause()   { super.onPause();   mMapView.onPause();   }
+}

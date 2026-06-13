@@ -1,45 +1,72 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="200dp"
-    android:background="#F64747"
+    android:layout_height="220dp"
+    android:background="#C62828"
     android:gravity="bottom"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:padding="24dp">
 
-    <ImageView
-        android:id="@+id/imageView3"
-        android:layout_width="189dp"
-        android:layout_height="327dp"
-        android:layout_marginBottom="-50dp"
-        android:src="@drawable/yo"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.068"
-        app:layout_constraintStart_toStartOf="parent" />
+    <!-- Profile Icon / Logo Container -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/nav_header_card"
+        android:layout_width="72dp"
+        android:layout_height="72dp"
+        app:cardCornerRadius="36dp"
+        app:cardElevation="0dp"
+        app:cardBackgroundColor="#33FFFFFF">
 
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <TextView
+                android:id="@+id/nav_header_initial"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="B"
+                android:textColor="@color/white"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/nav_header_image"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="16dp"
+                android:src="@drawable/account"
+                app:tint="@color/white" />
+        </FrameLayout>
+    </androidx.cardview.widget.CardView>
+
+    <!-- Welcome Message -->
     <TextView
         android:id="@+id/textView9"
-        android:layout_width="191dp"
-        android:layout_height="28dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginBottom="32dp"
-        android:text="welcome to Bloodbuddy  !!"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Welcome to BloodBuddy"
         android:textColor="@color/white"
-        android:textSize="16sp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        android:textSize="18sp"
+        android:fontFamily="sans-serif-medium"
+        android:textStyle="bold"
+        android:maxLines="1"
+        android:ellipsize="end" />
 
+    <!-- User Email (Corrected to be visible and not overlap) -->
     <TextView
         android:id="@+id/textView11"
-        android:layout_width="179dp"
-        android:layout_height="26dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginBottom="8dp"
-        android:textColor="@color/white"
-        android:textSize="16sp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text="user@email.com"
+        android:textColor="#E0E0E0"
+        android:textSize="14sp"
+        android:alpha="0.9"
+        android:maxLines="1"
+        android:ellipsize="end" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+</LinearLayout>

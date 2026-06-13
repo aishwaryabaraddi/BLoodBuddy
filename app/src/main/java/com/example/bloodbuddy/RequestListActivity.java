@@ -4,9 +4,11 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.telephony.SmsManager;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -16,6 +18,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.cardview.widget.CardView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
@@ -27,6 +30,9 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class RequestListActivity extends AppCompatActivity {
 
     private static final int PERMISSION_REQUEST_CODE = 1;
@@ -34,37 +40,26 @@ public class RequestListActivity extends AppCompatActivity {
     private LinearLayout receiverDetailsLayout;
     private String currentUserName;
     private String currentUserPhoneNumber;
+    private String currentUserId;
 
-    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.request_list);
 
-        // Initialize Firebase Database reference
         receiverRef = FirebaseDatabase.getInstance().getReference().child("receivers");
-
-        // Initialize receiverDetailsLayout
         receiverDetailsLayout = findViewById(R.id.receiverDetailsLayout);
 
-        // Retrieve receiver data from Firebase
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user != null) {
+            currentUserId = user.getUid();
+            fetchCurrentUserData();
+        }
+
         fetchReceiverDetails();
 
-        // Fetch current user data
-        fetchCurrentUserData();
+        findViewById(R.id.imageView8).setOnClickListener(v -> finish());
 
-        @SuppressLint({"MissingInflatedId", "LocalSuppress"})
-        ImageView imageViewBack = findViewById(R.id.imageView8);
-        imageViewBack.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Navigate back to DomainActivity
-                Intent intent = new Intent(RequestListActivity.this, DomainActivity.class);
-                startActivity(intent);
-            }
-        });
-
-        // Request SMS permissions if not granted
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.SEND_SMS}, PERMISSION_REQUEST_CODE);
         }
@@ -74,150 +69,129 @@ public class RequestListActivity extends AppCompatActivity {
         receiverRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                receiverDetailsLayout.removeAllViews(); // Clear existing views
-
+                receiverDetailsLayout.removeAllViews();
                 for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
                     Receiver receiver = snapshot.getValue(Receiver.class);
-                    if (receiver != null) {
+                    if (receiver != null && receiver.isActive()) {
                         addReceiverDetailsToContainer(receiver);
                     }
                 }
             }
-
             @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-                // Handle error
-            }
+            public void onCancelled(@NonNull DatabaseError databaseError) {}
         });
     }
 
     private void fetchCurrentUserData() {
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user != null) {
-            String userId = user.getUid();
-            DatabaseReference userRef = FirebaseDatabase.getInstance().getReference().child("users").child(userId);
-            userRef.addValueEventListener(new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                    currentUserName = dataSnapshot.child("name").getValue(String.class);
-                    currentUserPhoneNumber = dataSnapshot.child("phone").getValue(String.class);
-                }
-
-                @Override
-                public void onCancelled(@NonNull DatabaseError databaseError) {
-                    // Handle error
-                }
-            });
-        }
+        DatabaseReference userRef = FirebaseDatabase.getInstance().getReference().child("users").child(currentUserId);
+        userRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                currentUserName = dataSnapshot.child("name").getValue(String.class);
+                currentUserPhoneNumber = dataSnapshot.child("phone").getValue(String.class);
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {}
+        });
     }
 
     private void addReceiverDetailsToContainer(Receiver receiver) {
-        // Inflate card view for receiver details
+        CardView cardView = new CardView(this);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        );
-        params.setMargins(16, 16, 16, 16);
-
-        // Create a CardView to wrap receiver details
-        androidx.cardview.widget.CardView cardView = new androidx.cardview.widget.CardView(this);
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        params.setMargins(24, 16, 24, 16);
         cardView.setLayoutParams(params);
-        cardView.setRadius(8); // Set corner radius
-        cardView.setCardBackgroundColor(getResources().getColor(android.R.color.white)); // Set card background color
-        cardView.setCardElevation(4); // Set card elevation
+        cardView.setRadius(16);
+        cardView.setCardElevation(8);
 
-        // Create a LinearLayout to hold receiver details
-        LinearLayout linearLayout = new LinearLayout(this);
-        linearLayout.setLayoutParams(new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        ));
-        linearLayout.setOrientation(LinearLayout.VERTICAL);
-        linearLayout.setPadding(16, 16, 16, 16);
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(32, 32, 32, 32);
 
-        // Create TextViews for each detail
-        TextView tvName = createTextView("Name             : " + receiver.getName());
-        TextView tvPhoneNumber = createTextView("Contact          : " + receiver.getPhoneNumber());
-        TextView tvDistrict = createTextView("District           : " + receiver.getDistrict());
-        TextView tvTaluk = createTextView("Taluk              : " + receiver.getTaluk());
-        TextView tvBloodGroup = createTextView("Blood Group  : " + receiver.getBloodGroup());
-        TextView tvToWhomFor = createTextView("To Whom For: " + receiver.getToWhomFor());
-        TextView tvLocation = createTextView("Location        : " + receiver.getLocation());
+        layout.addView(createTextView("Patient: " + receiver.getToWhomFor(), 18, true, Color.BLACK));
+        layout.addView(createTextView("Required: " + receiver.getBloodGroup(), 16, true, Color.RED));
+        layout.addView(createTextView("Location: " + receiver.getLocation(), 14, false, Color.DKGRAY));
+        layout.addView(createTextView("Hospital: " + receiver.getDistrict() + ", " + receiver.getTaluk(), 14, false, Color.GRAY));
 
-        // Add TextViews to LinearLayout
-        linearLayout.addView(tvName);
-        linearLayout.addView(tvPhoneNumber);
-        linearLayout.addView(tvDistrict);
-        linearLayout.addView(tvTaluk);
-        linearLayout.addView(tvBloodGroup);
-        linearLayout.addView(tvToWhomFor);
-        linearLayout.addView(tvLocation);
+        LinearLayout btnLayout = new LinearLayout(this);
+        btnLayout.setOrientation(LinearLayout.HORIZONTAL);
+        btnLayout.setPadding(0, 20, 0, 0);
 
-        // Create call button
-        Button callButton = new Button(this);
-        callButton.setText("Call");
-        callButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent dialIntent = new Intent(Intent.ACTION_DIAL);
-                dialIntent.setData(Uri.parse("tel:" + receiver.getPhoneNumber()));
-                startActivity(dialIntent);
-            }
+        Button callBtn = createButton("CALL", "#F5F5F5", Color.BLACK);
+        callBtn.setOnClickListener(v -> {
+            startActivity(new Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + receiver.getPhoneNumber())));
         });
 
-        // Create donate button
-        Button donateButton = new Button(this);
-        donateButton.setText("Donate");
-        donateButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (ContextCompat.checkSelfPermission(RequestListActivity.this, Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED) {
-                    sendSms(receiver);
-                } else {
-                    Toast.makeText(RequestListActivity.this, "SMS permission not granted", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
+        Button donateBtn = createButton("ACCEPT SOS", "#C62828", Color.WHITE);
+        
+        // Check if already accepted
+        if (receiver.getResponderIds() != null && receiver.getResponderIds().contains(currentUserId)) {
+            donateBtn.setText("ACCEPTED");
+            donateBtn.setEnabled(false);
+            donateBtn.setBackgroundColor(Color.LTGRAY);
+        }
 
-        // Add buttons to LinearLayout
-        linearLayout.addView(callButton);
-        linearLayout.addView(donateButton);
+        donateBtn.setOnClickListener(v -> handleDonateClick(receiver, donateBtn));
 
-        // Add LinearLayout to CardView
-        cardView.addView(linearLayout);
-
-        // Add CardView to receiverDetailsLayout
+        btnLayout.addView(callBtn);
+        btnLayout.addView(donateBtn);
+        layout.addView(btnLayout);
+        cardView.addView(layout);
         receiverDetailsLayout.addView(cardView);
     }
 
-    private void sendSms(Receiver receiver) {
-        String phoneNumber = receiver.getPhoneNumber();
-        String message = "I am ready to donate blood. Name: " + currentUserName + ", Phone: " + currentUserPhoneNumber;
-        SmsManager smsManager = SmsManager.getDefault();
-        smsManager.sendTextMessage(phoneNumber, null, message, null, null);
-        Toast.makeText(this, "SMS sent", Toast.LENGTH_SHORT).show();
-    }
-
-    private TextView createTextView(String text) {
-        TextView textView = new TextView(this);
-        textView.setLayoutParams(new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        ));
-        textView.setText(text);
-        textView.setTextSize(16);
-        return textView;
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == PERMISSION_REQUEST_CODE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(this, "SMS permission granted", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this, "SMS permission denied", Toast.LENGTH_SHORT).show();
-            }
+    private void handleDonateClick(Receiver receiver, Button btn) {
+        if (currentUserId == null) return;
+        
+        // 1. Update Realtime Database (The Handshake)
+        List<String> responders = receiver.getResponderIds();
+        if (responders == null) responders = new ArrayList<>();
+        if (!responders.contains(currentUserId)) {
+            responders.add(currentUserId);
+            receiverRef.child(receiver.getId()).child("responderIds").setValue(responders)
+                .addOnSuccessListener(aVoid -> {
+                    btn.setText("ACCEPTED");
+                    btn.setEnabled(false);
+                    btn.setBackgroundColor(Color.LTGRAY);
+                    Toast.makeText(this, "Response Recorded! Thank you hero.", Toast.LENGTH_SHORT).show();
+                    
+                    // 2. Send SMS as Backup
+                    if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED) {
+                        sendSms(receiver);
+                    }
+                });
         }
+    }
+
+    private void sendSms(Receiver receiver) {
+        String message = "BloodBuddy: I'm coming to donate " + receiver.getBloodGroup() + 
+                         " for " + receiver.getToWhomFor() + ". Contact: " + currentUserName + " (" + currentUserPhoneNumber + ")";
+        try {
+            SmsManager.getDefault().sendTextMessage(receiver.getPhoneNumber(), null, message, null, null);
+        } catch (Exception e) {
+            Log.e("SMS", "Failed", e);
+        }
+    }
+
+    private TextView createTextView(String text, int size, boolean bold, int color) {
+        TextView tv = new TextView(this);
+        tv.setText(text);
+        tv.setTextSize(size);
+        tv.setTextColor(color);
+        if (bold) tv.setTypeface(null, android.graphics.Typeface.BOLD);
+        tv.setPadding(0, 4, 0, 4);
+        return tv;
+    }
+
+    private Button createButton(String text, String bgColor, int textColor) {
+        Button btn = new Button(this);
+        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, 120, 1.0f);
+        p.setMargins(8, 0, 8, 0);
+        btn.setLayoutParams(p);
+        btn.setText(text);
+        btn.setTextColor(textColor);
+        btn.setBackgroundColor(Color.parseColor(bgColor));
+        btn.setTextSize(12);
+        return btn;
     }
 }

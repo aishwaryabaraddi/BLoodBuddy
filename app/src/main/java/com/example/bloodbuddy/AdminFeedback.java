@@ -3,6 +3,7 @@ package com.example.bloodbuddy;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.Toast;
@@ -14,24 +15,23 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class AdminFeedback extends AppCompatActivity {
 
+    private static final String TAG = "AdminFeedback";
     private RecyclerView recyclerView;
     private FeedbackAdapter feedbackAdapter;
     private List<Feedback> feedbackList;
-    private DatabaseReference feedbackDatabase;
     private FirebaseAuth mAuth;
+    private FirebaseFirestore db;
 
-    private static final String ALLOWED_EMAIL = "asturekartik@gmail.com";
+    private static final String FALLBACK_ADMIN_EMAIL = "viju.r@gmail.com";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,24 +44,18 @@ public class AdminFeedback extends AppCompatActivity {
         feedbackAdapter = new FeedbackAdapter(feedbackList);
         recyclerView.setAdapter(feedbackAdapter);
 
-        feedbackDatabase = FirebaseDatabase.getInstance().getReference("feedback");
         mAuth = FirebaseAuth.getInstance();
+        db = FirebaseFirestore.getInstance();
 
         FirebaseUser currentUser = mAuth.getCurrentUser();
 
         if (currentUser != null) {
-            String userEmail = currentUser.getEmail();
-
-            if (ALLOWED_EMAIL.equals(userEmail)) {
-                fetchFeedbacks();
-            } else {
-                Toast.makeText(this, "Access denied. You do not have permission to view this page.", Toast.LENGTH_SHORT).show();
-                finish();
-            }
+            checkAdminStatus(currentUser);
         } else {
             Toast.makeText(this, "Please log in to access this page.", Toast.LENGTH_SHORT).show();
             finish();
         }
+        
         ImageView imageViewBack = findViewById(R.id.imageView7);
         imageViewBack.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -69,26 +63,59 @@ public class AdminFeedback extends AppCompatActivity {
                 // Navigate back to DomainActivity
                 Intent intent = new Intent(AdminFeedback.this, DomainActivity.class);
                 startActivity(intent);
+                finish();
             }
         });
     }
 
-    private void fetchFeedbacks() {
-        feedbackDatabase.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                feedbackList.clear();
-                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                    Feedback feedback = snapshot.getValue(Feedback.class);
-                    feedbackList.add(feedback);
-                }
-                feedbackAdapter.notifyDataSetChanged();
-            }
+    private void checkAdminStatus(FirebaseUser firebaseUser) {
+        db.collection("users").document(firebaseUser.getUid()).get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    boolean isAdmin = false;
+                    if (documentSnapshot.exists()) {
+                        User user = documentSnapshot.toObject(User.class);
+                        if (user != null && user.isAdmin()) isAdmin = true;
+                    }
+                    
+                    if (isAdmin || FALLBACK_ADMIN_EMAIL.equalsIgnoreCase(firebaseUser.getEmail())) {
+                        fetchFeedbacks();
+                    } else {
+                        accessDenied();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    if (FALLBACK_ADMIN_EMAIL.equalsIgnoreCase(firebaseUser.getEmail())) {
+                        fetchFeedbacks();
+                    } else {
+                        Toast.makeText(AdminFeedback.this, "Error verifying admin status.", Toast.LENGTH_SHORT).show();
+                        finish();
+                    }
+                });
+    }
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-                Toast.makeText(AdminFeedback.this, "Failed to load feedback.", Toast.LENGTH_SHORT).show();
-            }
-        });
+    private void accessDenied() {
+        Toast.makeText(this, "Access denied. You do not have permission to view this page.", Toast.LENGTH_SHORT).show();
+        finish();
+    }
+
+    private void fetchFeedbacks() {
+        db.collection("feedbacks")
+                .orderBy("timestamp", Query.Direction.DESCENDING)
+                .addSnapshotListener((value, error) -> {
+                    if (error != null) {
+                        Log.e(TAG, "Listen failed.", error);
+                        Toast.makeText(AdminFeedback.this, "Failed to load feedback.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    feedbackList.clear();
+                    if (value != null) {
+                        for (QueryDocumentSnapshot doc : value) {
+                            Feedback feedback = doc.toObject(Feedback.class);
+                            feedbackList.add(feedback);
+                        }
+                    }
+                    feedbackAdapter.notifyDataSetChanged();
+                });
     }
 }
