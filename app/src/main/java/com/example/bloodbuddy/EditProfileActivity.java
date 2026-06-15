@@ -199,8 +199,8 @@ public class EditProfileActivity extends AppCompatActivity {
             return;
         }
 
-        if (!phone.matches("^[6-9]\\d{9}$")) {
-            etPhone.setError("Enter a valid 10-digit mobile number starting with 6-9");
+        if (phone.length() != 10) {
+            etPhone.setError("Enter 10-digit number");
             return;
         }
 

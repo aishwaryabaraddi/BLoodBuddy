@@ -101,12 +101,6 @@ public class DonorActivity extends AppCompatActivity {
         requestLocationPermission();
 
         etLastDonated.setOnClickListener(v -> showDatePickerDialog());
-        // Tap the location field → open Swiggy/Zomato-style location picker
-        etLocation.setFocusable(false);
-        etLocation.setOnClickListener(v ->
-                startActivityForResult(
-                        new Intent(this, LocationPickerActivity.class),
-                        LOCATION_PICKER_REQUEST));
         findViewById(R.id.imageViewBack).setOnClickListener(v -> finish());
         btnSubmit.setOnClickListener(v -> showHealthQuestionnaire());
     }
@@ -276,7 +270,7 @@ public class DonorActivity extends AppCompatActivity {
         db.collection("donors").document(donorId).set(donor)
             .addOnSuccessListener(aVoid -> {
                 // Update User flag in firestore
-                db.collection("users").document(donorId).update("donor", true);
+                db.collection("users").document(donorId).update("isDonor", true);
                 showSuccessDialog();
             })
             .addOnFailureListener(e -> {
@@ -297,17 +291,6 @@ public class DonorActivity extends AppCompatActivity {
             finish();
         });
         dialog.show();
-
-        // Pop animation on the checkmark icon
-        android.view.View icon = dialog.findViewById(R.id.ivIcon);
-        icon.setScaleX(0f);
-        icon.setScaleY(0f);
-        icon.animate()
-                .scaleX(1f).scaleY(1f)
-                .setDuration(450)
-                .setStartDelay(80)
-                .setInterpolator(new android.view.animation.OvershootInterpolator(1.8f))
-                .start();
     }
 
     private void showDatePickerDialog() {
@@ -338,20 +321,10 @@ public class DonorActivity extends AppCompatActivity {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 getCurrentLocation();
             } else {
-                etLocation.setHint("Tap here to search your location");
-                Toast.makeText(this, "Tap the location field to search.", Toast.LENGTH_SHORT).show();
+                etLocation.setEnabled(true);
+                etLocation.setHint("Location permission denied — type your address");
+                Toast.makeText(this, "Please type your address manually.", Toast.LENGTH_SHORT).show();
             }
-        }
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == LOCATION_PICKER_REQUEST && resultCode == RESULT_OK && data != null) {
-            currentLatitude  = data.getDoubleExtra(LocationPickerActivity.EXTRA_LAT, 0.0);
-            currentLongitude = data.getDoubleExtra(LocationPickerActivity.EXTRA_LON, 0.0);
-            String address   = data.getStringExtra(LocationPickerActivity.EXTRA_ADDRESS);
-            etLocation.setText(address);
         }
     }
 

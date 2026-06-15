@@ -6,6 +6,8 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
+import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -40,7 +42,10 @@ public class ChatAiActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat_ai);
-        String apiKey = BuildConfig.GEMINI_API_KEY;
+        // TODO: Replace with a fresh key from https://aistudio.google.com/app/apikey
+        // Key MUST start with "AIza..." — any other format will not work.
+        //String apiKey = "AIzaSyDwnPuC5zgANvhTiRK-MyzOm1xiQFbtzdc";
+        String apiKey ="AIzaSyDLiNezubDiZUE8i9pPXAbfH-vRaTl9CHo";
         try {
             // gemini-2.5-flash: free tier (5 RPM / 250K TPM) — confirmed on this key.
             GenerativeModel gm = new GenerativeModel("gemini-2.5-flash", apiKey);

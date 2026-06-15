@@ -39,29 +39,6 @@
         </RelativeLayout>
     </androidx.appcompat.widget.Toolbar>
 
-    <!-- Blood group filter chip strip -->
-    <HorizontalScrollView
-        android:id="@+id/blood_group_filter_scroll"
-        android:layout_width="0dp"
-        android:layout_height="44dp"
-        android:background="@android:color/white"
-        android:scrollbars="none"
-        android:elevation="4dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/custom_toolbar">
-
-        <LinearLayout
-            android:id="@+id/blood_group_chip_row"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:orientation="horizontal"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:gravity="center_vertical" />
-
-    </HorizontalScrollView>
-
     <!-- Full-screen Map -->
     <org.osmdroid.views.MapView
         android:id="@+id/mapView"
@@ -71,14 +48,14 @@
         app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/blood_group_filter_scroll" />
+        app:layout_constraintTop_toBottomOf="@id/custom_toolbar" />
 
     <!-- Stats HUD — shows "5 Donors • 3 Requests" -->
     <TextView
         android:id="@+id/tvMapStats"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="12dp"
         android:background="@drawable/rounded_button"
         android:backgroundTint="#D9000000"
         android:paddingHorizontal="14dp"
@@ -89,7 +66,7 @@
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/blood_group_filter_scroll" />
+        app:layout_constraintTop_toBottomOf="@id/custom_toolbar" />
 
     <!-- Filter buttons — right side -->
     <LinearLayout
@@ -99,9 +76,9 @@
         android:gravity="center"
         android:orientation="vertical"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/blood_group_filter_scroll">
+        app:layout_constraintTop_toBottomOf="@id/custom_toolbar">
 
-        <!-- Donors toggle  — starts RED (active/visible) -->
+        <!-- Donors toggle -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -110,10 +87,10 @@
             android:orientation="vertical">
 
             <androidx.cardview.widget.CardView
-                android:layout_width="56dp"
-                android:layout_height="56dp"
-                app:cardBackgroundColor="#EC3E3E"
-                app:cardCornerRadius="28dp"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                app:cardBackgroundColor="#FFFFFF"
+                app:cardCornerRadius="26dp"
                 app:cardElevation="6dp">
                 <ImageView
                     android:id="@+id/legendIcon"
@@ -122,26 +99,26 @@
                     android:background="?attr/selectableItemBackground"
                     android:clickable="true"
                     android:focusable="true"
-                    android:padding="12dp"
+                    android:padding="10dp"
                     android:src="@drawable/baseline_groups_24"
-                    app:tint="@android:color/white" />
+                    app:tint="#EC3E3E" />
             </androidx.cardview.widget.CardView>
 
             <TextView
                 android:id="@+id/tvDonorCount"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:background="#CC000000"
-                android:paddingHorizontal="6dp"
-                android:paddingVertical="2dp"
+                android:layout_marginTop="3dp"
+                android:background="#CCFFFFFF"
+                android:paddingHorizontal="4dp"
+                android:paddingVertical="1dp"
                 android:text="Donors"
-                android:textColor="@android:color/white"
+                android:textColor="#212121"
                 android:textSize="10sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <!-- SOS Requests toggle  — starts RED (active/visible) -->
+        <!-- Requests toggle -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -149,10 +126,10 @@
             android:orientation="vertical">
 
             <androidx.cardview.widget.CardView
-                android:layout_width="56dp"
-                android:layout_height="56dp"
-                app:cardBackgroundColor="#EC3E3E"
-                app:cardCornerRadius="28dp"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                app:cardBackgroundColor="#FFFFFF"
+                app:cardCornerRadius="26dp"
                 app:cardElevation="6dp">
                 <ImageView
                     android:id="@+id/legendIconReceivers"
@@ -161,7 +138,7 @@
                     android:background="?attr/selectableItemBackground"
                     android:clickable="true"
                     android:focusable="true"
-                    android:padding="12dp"
+                    android:padding="10dp"
                     android:src="@drawable/blood" />
             </androidx.cardview.widget.CardView>
 
@@ -169,12 +146,12 @@
                 android:id="@+id/tvRequestCount"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:background="#CC000000"
-                android:paddingHorizontal="6dp"
-                android:paddingVertical="2dp"
-                android:text="SOS"
-                android:textColor="@android:color/white"
+                android:layout_marginTop="3dp"
+                android:background="#CCFFFFFF"
+                android:paddingHorizontal="4dp"
+                android:paddingVertical="1dp"
+                android:text="Requests"
+                android:textColor="#212121"
                 android:textSize="10sp"
                 android:textStyle="bold" />
         </LinearLayout>

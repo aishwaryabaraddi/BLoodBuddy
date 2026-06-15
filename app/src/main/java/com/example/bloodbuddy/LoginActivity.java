@@ -16,8 +16,6 @@ import com.google.firebase.firestore.FirebaseFirestore;
 
 public class LoginActivity extends AppCompatActivity {
 
-    private static final String ADMIN_EMAIL = "viju.r@gmail.com";
-
     private ActivityLoginBinding binding;
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
@@ -32,10 +30,10 @@ public class LoginActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
-        // Check if user is already logged in — route to correct screen
+        // Check if user is already logged in
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser != null) {
-            routeUser(currentUser);
+            navigateToDashboard();
         }
 
         setupListeners();
@@ -103,13 +101,11 @@ public class LoginActivity extends AppCompatActivity {
                         setLoading(false);
                         if (documentSnapshot.exists()) {
                             Toast.makeText(LoginActivity.this, "Welcome back to Blood Buddy", Toast.LENGTH_SHORT).show();
-                            User profile = documentSnapshot.toObject(User.class);
-                            boolean isAdmin = (profile != null && profile.isAdmin())
-                                    || ADMIN_EMAIL.equalsIgnoreCase(user.getEmail());
-                            goTo(isAdmin ? AdminDashboardActivity.class : DomainActivity.class);
+                            navigateToDashboard();
                         } else {
+                            // This happens if Auth exists but Firestore record is missing
                             Toast.makeText(LoginActivity.this, "User profile not found. Please register again.", Toast.LENGTH_LONG).show();
-                            mAuth.signOut();
+                            mAuth.signOut(); // Log them out since they have no profile
                         }
                     })
                     .addOnFailureListener(e -> {
@@ -119,20 +115,8 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
-    /** Route an already-authenticated user to the correct home screen. */
-    private void routeUser(FirebaseUser user) {
-        db.collection("users").document(user.getUid()).get()
-                .addOnSuccessListener(doc -> {
-                    User profile = (doc != null && doc.exists()) ? doc.toObject(User.class) : null;
-                    boolean isAdmin = (profile != null && profile.isAdmin())
-                            || ADMIN_EMAIL.equalsIgnoreCase(user.getEmail());
-                    goTo(isAdmin ? AdminDashboardActivity.class : DomainActivity.class);
-                })
-                .addOnFailureListener(e -> goTo(DomainActivity.class));
-    }
-
-    private void goTo(Class<?> dest) {
-        Intent intent = new Intent(LoginActivity.this, dest);
+    private void navigateToDashboard() {
+        Intent intent = new Intent(LoginActivity.this, DomainActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
