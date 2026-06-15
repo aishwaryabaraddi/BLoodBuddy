@@ -83,6 +83,13 @@ public class ReceiverActivity extends AppCompatActivity {
         setupSpinners();
         requestLocationPermission();
 
+        // Tap location field → Swiggy/Zomato-style location picker
+        etLocation.setFocusable(false);
+        etLocation.setOnClickListener(v ->
+                startActivityForResult(
+                        new Intent(this, LocationPickerActivity.class),
+                        LOCATION_PICKER_REQUEST));
+
         findViewById(R.id.imageViewBack).setOnClickListener(v -> finish());
         btnSubmit.setOnClickListener(v -> validateAndSubmit());
     }
@@ -204,6 +211,11 @@ public class ReceiverActivity extends AppCompatActivity {
         dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         dialog.setCancelable(false);
 
+        TextView tvTitle = dialog.findViewById(R.id.tvTitle);
+        TextView tvMessage = dialog.findViewById(R.id.tvMessage);
+        tvTitle.setText("SOS Alert Sent!");
+        tvMessage.setText("Nearby donors are being notified.\nHang tight — help is on the way.");
+
         dialog.findViewById(R.id.btnGotIt).setOnClickListener(v -> {
             dialog.dismiss();
             startActivity(new Intent(ReceiverActivity.this, DomainActivity.class));
@@ -216,6 +228,17 @@ public class ReceiverActivity extends AppCompatActivity {
         });
 
         dialog.show();
+
+        // Pop animation on the checkmark icon
+        android.view.View icon = dialog.findViewById(R.id.ivIcon);
+        icon.setScaleX(0f);
+        icon.setScaleY(0f);
+        icon.animate()
+                .scaleX(1f).scaleY(1f)
+                .setDuration(450)
+                .setStartDelay(80)
+                .setInterpolator(new android.view.animation.OvershootInterpolator(1.8f))
+                .start();
     }
 
     private void requestLocationPermission() {
@@ -305,9 +328,19 @@ public class ReceiverActivity extends AppCompatActivity {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 getCurrentLocation();
             } else {
-                etLocation.setEnabled(true);
-                etLocation.setHint("Location denied — please type your address");
+                etLocation.setHint("Tap here to search your location");
             }
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == LOCATION_PICKER_REQUEST && resultCode == RESULT_OK && data != null) {
+            currentLatitude  = data.getDoubleExtra(LocationPickerActivity.EXTRA_LAT, 0.0);
+            currentLongitude = data.getDoubleExtra(LocationPickerActivity.EXTRA_LON, 0.0);
+            String address   = data.getStringExtra(LocationPickerActivity.EXTRA_ADDRESS);
+            etLocation.setText(address);
         }
     }
 

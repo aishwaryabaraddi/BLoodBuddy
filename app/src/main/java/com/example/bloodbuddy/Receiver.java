@@ -18,9 +18,17 @@ public class Receiver implements Serializable {
     private String patientGender;
     private double latitude;
     private double longitude;
-    private long timestamp;
+    private long   timestamp;
     private boolean active;
     private List<String> responderIds;
+
+    // Fulfillment tracking — null while active, set when request is closed
+    // Values: "app_donor"  → Blood Buddy donor helped
+    //         "external"   → Blood bank / hospital arranged it
+    //         "cancelled"  → No longer needed / patient recovered
+    private String fulfillmentSource;
+    private long   fulfilledAt;
+    private String fulfilledByUserId;
 
     public Receiver() {
         this.responderIds = new ArrayList<>();
@@ -91,4 +99,13 @@ public class Receiver implements Serializable {
 
     public List<String> getResponderIds() { return responderIds; }
     public void setResponderIds(List<String> responderIds) { this.responderIds = responderIds; }
+
+    public String getFulfillmentSource() { return fulfillmentSource; }
+    public void setFulfillmentSource(String fulfillmentSource) { this.fulfillmentSource = fulfillmentSource; }
+
+    public long getFulfilledAt() { return fulfilledAt; }
+    public void setFulfilledAt(long fulfilledAt) { this.fulfilledAt = fulfilledAt; }
+
+    public String getFulfilledByUserId() { return fulfilledByUserId; }
+    public void setFulfilledByUserId(String fulfilledByUserId) { this.fulfilledByUserId = fulfilledByUserId; }
 }
