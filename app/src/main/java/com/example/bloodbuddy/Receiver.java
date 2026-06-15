@@ -1,9 +1,12 @@
 package com.example.bloodbuddy;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Receiver implements Serializable {
     private String id;
+    private String userId; // Link to the user who made the request
     private String name;
     private String phoneNumber;
     private String district;
@@ -11,15 +14,29 @@ public class Receiver implements Serializable {
     private String bloodGroup;
     private String toWhomFor;
     private String location;
+    private String patientAge;
+    private String patientGender;
     private double latitude;
     private double longitude;
+    private long   timestamp;
+    private boolean active;
+    private List<String> responderIds;
 
-    // Default constructor required for calls to DataSnapshot.getValue(Receiver.class)
+    // Fulfillment tracking — null while active, set when request is closed
+    // Values: "app_donor"  → Blood Buddy donor helped
+    //         "external"   → Blood bank / hospital arranged it
+    //         "cancelled"  → No longer needed / patient recovered
+    private String fulfillmentSource;
+    private long   fulfilledAt;
+    private String fulfilledByUserId;
+
     public Receiver() {
+        this.responderIds = new ArrayList<>();
     }
 
-    public Receiver(String id, String name, String phoneNumber, String district, String taluk, String bloodGroup, String toWhomFor, String location, double latitude, double longitude) {
+    public Receiver(String id, String userId, String name, String phoneNumber, String district, String taluk, String bloodGroup, String toWhomFor, String location, double latitude, double longitude) {
         this.id = id;
+        this.userId = userId;
         this.name = name;
         this.phoneNumber = phoneNumber;
         this.district = district;
@@ -29,58 +46,66 @@ public class Receiver implements Serializable {
         this.location = location;
         this.latitude = latitude;
         this.longitude = longitude;
+        this.timestamp = System.currentTimeMillis();
+        this.active = true;
+        this.responderIds = new ArrayList<>();
     }
 
     // Getters and Setters
-    public String getId() {
-        return id;
-    }
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
 
-    public String getName() {
-        return name;
-    }
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
 
-    public String getPhoneNumber() {
-        return phoneNumber;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public String getDistrict() {
-        return district;
-    }
+    public String getPhoneNumber() { return phoneNumber; }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
 
-    public String getTaluk() {
-        return taluk;
-    }
+    public String getDistrict() { return district; }
+    public void setDistrict(String district) { this.district = district; }
 
-    public String getBloodGroup() {
-        return bloodGroup;
-    }
+    public String getTaluk() { return taluk; }
+    public void setTaluk(String taluk) { this.taluk = taluk; }
 
-    public String getToWhomFor() {
-        return toWhomFor;
-    }
+    public String getBloodGroup() { return bloodGroup; }
+    public void setBloodGroup(String bloodGroup) { this.bloodGroup = bloodGroup; }
 
-    public String getLocation() {
-        return location;
-    }
+    public String getToWhomFor() { return toWhomFor; }
+    public void setToWhomFor(String toWhomFor) { this.toWhomFor = toWhomFor; }
 
-    public void setLocation(String location) {
-        this.location = location;
-    }
+    public String getLocation() { return location; }
+    public void setLocation(String location) { this.location = location; }
 
-    public double getLatitude() {
-        return latitude;
-    }
+    public String getPatientAge() { return patientAge; }
+    public void setPatientAge(String patientAge) { this.patientAge = patientAge; }
 
-    public void setLatitude(double latitude) {
-        this.latitude = latitude;
-    }
+    public String getPatientGender() { return patientGender; }
+    public void setPatientGender(String patientGender) { this.patientGender = patientGender; }
 
-    public double getLongitude() {
-        return longitude;
-    }
+    public double getLatitude() { return latitude; }
+    public void setLatitude(double latitude) { this.latitude = latitude; }
 
-    public void setLongitude(double longitude) {
-        this.longitude = longitude;
-    }
+    public double getLongitude() { return longitude; }
+    public void setLongitude(double longitude) { this.longitude = longitude; }
+
+    public long getTimestamp() { return timestamp; }
+    public void setTimestamp(long timestamp) { this.timestamp = timestamp; }
+
+    public boolean isActive() { return active; }
+    public void setActive(boolean active) { this.active = active; }
+
+    public List<String> getResponderIds() { return responderIds; }
+    public void setResponderIds(List<String> responderIds) { this.responderIds = responderIds; }
+
+    public String getFulfillmentSource() { return fulfillmentSource; }
+    public void setFulfillmentSource(String fulfillmentSource) { this.fulfillmentSource = fulfillmentSource; }
+
+    public long getFulfilledAt() { return fulfilledAt; }
+    public void setFulfilledAt(long fulfilledAt) { this.fulfilledAt = fulfilledAt; }
+
+    public String getFulfilledByUserId() { return fulfilledByUserId; }
+    public void setFulfilledByUserId(String fulfilledByUserId) { this.fulfilledByUserId = fulfilledByUserId; }
 }

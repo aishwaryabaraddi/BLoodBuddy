@@ -12,13 +12,17 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
+    <!-- Support for Android 13+ (API 33+) -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <!-- Legacy support for older versions -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+
     <uses-permission android:name="android.permission.SEND_SMS" />
-
-
 
     <application
         android:allowBackup="true"
@@ -57,9 +61,9 @@
             </intent-filter>
         </activity>
 
-        <!-- <activity android:theme="@style/Theme.MyApplication.NoActionBar" /> -->
         <service android:name=".LocationService"
-            android:enabled="true"/>
+            android:enabled="true"
+            android:foregroundServiceType="location" />
 
         <service android:name=".MyFirebaseMessagingService"
             android:exported="true">
@@ -76,9 +80,10 @@
             </intent-filter>
         </receiver>
 
-
-        <activity android:name=".LoginActivity"/>
-        <activity android:name=".RegisterActivity" />
+        <activity android:name=".LoginActivity"
+            android:windowSoftInputMode="adjustResize"/>
+        <activity android:name=".RegisterActivity"
+            android:windowSoftInputMode="stateAlwaysHidden|adjustResize"/>
         <activity android:name=".DomainActivity"/>
         <activity android:name=".DonorActivity" />
         <activity android:name=".ReceiverActivity"/>
@@ -90,6 +95,8 @@
         <activity android:name=".BloodInfoActivity"/>
         <activity android:name=".ProfileActivity"/>
         <activity android:name=".NearbyHospitalsActivity"/>
+        <activity android:name=".LocationPickerActivity"
+            android:windowSoftInputMode="stateVisible" />
         <activity android:name=".DonorsListActivity"/>
         <activity android:name=".ForgotPassword"/>
         <activity android:name=".UploadImage"/>
@@ -97,10 +104,14 @@
         <activity android:name=".RequestActivity"/>
         <activity android:name=".About"/>
         <activity android:name=".EditProfileActivity"/>
-<activity android:name="UserFeedback"/>
+        <activity android:name=".UserFeedback"/>
         <activity android:name=".AdminFeedback"/>
-
-
+        <activity android:name=".AdminDashboardActivity"/>
+        <activity android:name=".AdminDonorsActivity"/>
+        <activity android:name=".AdminSOSActivity"/>
+        <activity android:name=".AdminUsersActivity"/>
+        <activity android:name=".EventDetailsActivity" />
+        <activity android:name=".ChatAiActivity" />
 
     </application>
 

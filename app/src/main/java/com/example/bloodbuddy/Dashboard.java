@@ -9,57 +9,45 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.DocumentSnapshot;
 
 public class Dashboard extends AppCompatActivity {
 
     private TextView textViewName, textViewEmail;
-    private DatabaseReference usersRef;
+    private FirebaseFirestore db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.dashboard);
 
+        textViewName = findViewById(R.id.textView9);
+        textViewEmail = findViewById(R.id.textView11);
 
-        textViewName = findViewById(R.id.textView9); // Assuming this is the TextView for displaying name
-        textViewEmail = findViewById(R.id.textView11); // Assuming this is the TextView for displaying email
-
-        // Get the current user from Firebase Authentication
+        db = FirebaseFirestore.getInstance();
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+
         if (user != null) {
-            // Initialize Firebase Realtime Database reference
-            usersRef = FirebaseDatabase.getInstance().getReference().child("users").child(user.getUid());
+            // Fetch user details from Cloud Firestore
+            db.collection("users").document(user.getUid())
+                    .get()
+                    .addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            DocumentSnapshot document = task.getResult();
+                            if (document != null && document.exists()) {
+                                String name = document.getString("name");
+                                String email = document.getString("email");
 
-            // Fetch user details from Firebase Database
-            usersRef.addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                    if (dataSnapshot.exists()) {
-                        String name = dataSnapshot.child("name").getValue(String.class);
-                        String email = dataSnapshot.child("email").getValue(String.class);
-
-                        // Set the fetched data to TextViews
-                        if (name != null) {
-                            textViewName.setText(name);
+                                if (name != null) textViewName.setText(name);
+                                if (email != null) textViewEmail.setText(email);
+                            } else {
+                                Log.e("Dashboard", "No such document in Firestore for UID: " + user.getUid());
+                            }
+                        } else {
+                            Log.e("Dashboard", "Firestore fetch failed: ", task.getException());
                         }
-                        if (email != null) {
-                            textViewEmail.setText(email);
-                        }
-                    } else {
-                        Log.e("Dashboard", "User data not found in database for UID: " + user.getUid());
-                    }
-                }
-
-                @Override
-                public void onCancelled(@NonNull DatabaseError databaseError) {
-                    Log.e("Dashboard", "Failed to fetch user data: " + databaseError.getMessage());
-                }
-            });
+                    });
         } else {
             Log.e("Dashboard", "Current user is null");
         }

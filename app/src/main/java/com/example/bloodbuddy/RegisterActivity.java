@@ -1,59 +1,42 @@
 package com.example.bloodbuddy;
 
+import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.util.Patterns;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.ProgressBar;
 import android.widget.RadioButton;
-import android.widget.RadioGroup;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
-import androidx.annotation.NonNull;
+
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.auth.AuthResult;
+import com.example.bloodbuddy.databinding.ActivityRegisterBinding;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseAuthException;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Calendar;
+import java.util.Locale;
+import java.util.regex.Pattern;
 
 public class RegisterActivity extends AppCompatActivity {
 
-    private static final String TAG = "RegisterActivity";
-
+    private ActivityRegisterBinding binding;
     private FirebaseAuth mAuth;
-    private EditText registerName, registerEmail, registerPhone, registerPassword;
-    private RadioGroup genderGroup;
-    private RadioButton genderButton;
-    private Spinner districtSpinner, talukSpinner, bloodGroupSpinner;
-    private Button registerButton;
-    private ProgressBar progressBar;
-    private TextView loginLink;
+    private FirebaseFirestore db;
 
-    // Blood groups
-    private String[] bloodGroups = {"Select Blood Group", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"};
-
-    // Karnataka districts and taluks
-    private String[] districts = {"Select District", "Bagalkot", "Bangalore Rural", "Bangalore Urban", "Belgaum",
+    private final String[] bloodGroups = {"Select Blood Group", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"};
+    private final String[] districts = {"Select District", "Bagalkot", "Bangalore Rural", "Bangalore Urban", "Belgaum",
             "Bellary", "Bidar", "Bijapur", "Chamarajanagar", "Chikballapur", "Chikmagalur",
             "Chitradurga", "Dakshina Kannada", "Davanagere", "Dharwad", "Gadag", "Gulbarga",
             "Hassan", "Haveri", "Kodagu", "Kolar", "Koppal", "Mandya", "Mysore", "Raichur",
             "Ramanagara", "Shimoga", "Tumkur", "Udupi", "Uttara Kannada", "Yadgir"};
 
-    private String[][] taluks = {
-            {"Select Taluk"},  // placeholder for "Select District"
+    private final String[][] taluks = {
+            {"Select Taluk"},
             {"Bagalkot", "Badami", "Bilagi", "Hungund", "Jamkhandi", "Mudhol"},
             {"Devanahalli", "Doddaballapur", "Hosakote", "Nelamangala"},
             {"Bangalore North", "Bangalore East", "Bangalore South", "Anekal"},
@@ -89,204 +72,203 @@ public class RegisterActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_register);
+        binding = ActivityRegisterBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
 
         mAuth = FirebaseAuth.getInstance();
+        db = FirebaseFirestore.getInstance();
 
-        // Initialize views
-        registerName = findViewById(R.id.register_name);
-        registerEmail = findViewById(R.id.register_email);
-        registerPhone = findViewById(R.id.register_phone);
-        registerPassword = findViewById(R.id.register_password);
-        genderGroup = findViewById(R.id.gender_group);
-        bloodGroupSpinner = findViewById(R.id.spinner_blood_group);
-        districtSpinner = findViewById(R.id.spinner_district);
-        talukSpinner = findViewById(R.id.spinner_taluk);
-        registerButton = findViewById(R.id.register_button);
-        progressBar = findViewById(R.id.progress_bar);
-        loginLink = findViewById(R.id.login_link);
+        setupSpinners();
+        setupDatePicker();
 
-        // Blood group spinner
-        ArrayAdapter<String> bloodAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, bloodGroups);
-        bloodAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        bloodGroupSpinner.setAdapter(bloodAdapter);
-
-        // District spinner
-        ArrayAdapter<String> districtAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, districts);
-        districtAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        districtSpinner.setAdapter(districtAdapter);
-
-        // Taluk spinner (default placeholder)
-        ArrayAdapter<String> talukAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, taluks[0]);
-        talukAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        talukSpinner.setAdapter(talukAdapter);
-
-        // Update taluk spinner based on selected district
-        districtSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                ArrayAdapter<String> newTalukAdapter = new ArrayAdapter<>(RegisterActivity.this,
-                        android.R.layout.simple_spinner_item, taluks[position]);
-                newTalukAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                talukSpinner.setAdapter(newTalukAdapter);
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {}
-        });
-
-        registerButton.setOnClickListener(v -> registerUser());
-
-        loginLink.setOnClickListener(v -> {
+        binding.registerButton.setOnClickListener(v -> validateAndRegister());
+        binding.loginLink.setOnClickListener(v -> {
             startActivity(new Intent(RegisterActivity.this, LoginActivity.class));
             finish();
         });
     }
 
-    private void registerUser() {
-        String name = registerName.getText().toString().trim();
-        String email = registerEmail.getText().toString().trim();
-        String phone = registerPhone.getText().toString().trim();
-        String password = registerPassword.getText().toString().trim();
+    private void setupDatePicker() {
+        binding.registerDob.setOnClickListener(v -> {
+            final Calendar c = Calendar.getInstance();
+            int year = c.get(Calendar.YEAR) - 18; 
+            int month = c.get(Calendar.MONTH);
+            int day = c.get(Calendar.DAY_OF_MONTH);
 
-        int selectedGenderId = genderGroup.getCheckedRadioButtonId();
-        genderButton = findViewById(selectedGenderId);
+            DatePickerDialog datePickerDialog = new DatePickerDialog(this,
+                    (view, year1, monthOfYear, dayOfMonth) -> {
+                        String dob = String.format(Locale.getDefault(), "%02d/%02d/%d", dayOfMonth, (monthOfYear + 1), year1);
+                        binding.registerDob.setText(dob);
+                    }, year, month, day);
+            
+            Calendar maxDate = Calendar.getInstance();
+            maxDate.add(Calendar.YEAR, -18);
+            datePickerDialog.getDatePicker().setMaxDate(maxDate.getTimeInMillis());
+            
+            Calendar minDate = Calendar.getInstance();
+            minDate.add(Calendar.YEAR, -65);
+            datePickerDialog.getDatePicker().setMinDate(minDate.getTimeInMillis());
+            
+            datePickerDialog.show();
+        });
+    }
+
+    private void setupSpinners() {
+        setupAdapter(binding.spinnerBloodGroup, bloodGroups);
+        setupAdapter(binding.spinnerDistrict, districts);
+
+        binding.spinnerDistrict.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (position >= 0 && position < taluks.length) {
+                    setupAdapter(binding.spinnerTaluk, taluks[position]);
+                }
+            }
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
+    }
+
+    private void setupAdapter(android.widget.Spinner spinner, String[] data) {
+        if (spinner == null) return;
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, 
+                android.R.layout.simple_spinner_item, data) {
+            @Override
+            public View getView(int position, View convertView, android.view.ViewGroup parent) {
+                View v = super.getView(position, convertView, parent);
+                ((TextView) v).setTextColor(getResources().getColor(android.R.color.black));
+                ((TextView) v).setTextSize(16);
+                return v;
+            }
+        };
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner.setAdapter(adapter);
+    }
+
+    private boolean isValidName(String name) {
+        return name != null && name.trim().length() >= 3 && name.matches("^[a-zA-Z\\s]*$");
+    }
+
+    private boolean isValidEmail(String email) {
+        return email != null && Patterns.EMAIL_ADDRESS.matcher(email).matches() && email.contains(".");
+    }
+
+    private boolean isValidMobile(String phone) {
+        if (phone == null || phone.length() != 10) return false;
+        if (!phone.matches("^[6-9]\\d{9}$")) return false;
+        // Check for dummy repeating numbers like 0000000000, 1111111111, etc.
+        for (int i = 0; i <= 9; i++) {
+            String dummy = String.format(Locale.getDefault(), "%d%d%d%d%d%d%d%d%d%d", i, i, i, i, i, i, i, i, i, i);
+            if (phone.equals(dummy)) return false;
+        }
+        return true;
+    }
+
+    private void validateAndRegister() {
+        String name = binding.registerName.getText().toString().trim();
+        String email = binding.registerEmail.getText().toString().trim();
+        String phone = binding.registerPhone.getText().toString().trim();
+        String dob = binding.registerDob.getText().toString().trim();
+        String password = binding.registerPassword.getText().toString().trim();
+
+        int selectedGenderId = binding.genderGroup.getCheckedRadioButtonId();
+        RadioButton genderButton = findViewById(selectedGenderId);
         String gender = (genderButton == null) ? "" : genderButton.getText().toString().trim();
 
-        String bloodGroup = bloodGroupSpinner.getSelectedItem().toString();
-        String district = districtSpinner.getSelectedItem().toString();
-        String taluk = talukSpinner.getSelectedItem().toString();
+        String district = binding.spinnerDistrict.getSelectedItem().toString();
+        String taluk = binding.spinnerTaluk.getSelectedItem().toString();
+        String bloodGroup = binding.spinnerBloodGroup.getSelectedItem().toString();
 
-        // Validations
-        if (name.isEmpty()) {
-            registerName.setError("Name is required");
-            registerName.requestFocus();
+        if (!isValidName(name)) {
+            binding.registerName.setError("Enter a valid name (min 3 chars, letters only)");
+            binding.registerName.requestFocus();
             return;
         }
 
-        if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            registerEmail.setError("Valid email is required");
-            registerEmail.requestFocus();
+        if (!isValidEmail(email)) {
+            binding.registerEmail.setError("Enter a valid email address (e.g. user@gmail.com)");
+            binding.registerEmail.requestFocus();
             return;
         }
 
-        if (!email.endsWith("@gmail.com")) {
-            registerEmail.setError("Only Gmail addresses are allowed (e.g., user@gmail.com)");
-            registerEmail.requestFocus();
+        if (!isValidMobile(phone)) {
+            binding.registerPhone.setError("Enter a valid 10-digit mobile number starting with 6-9");
+            binding.registerPhone.requestFocus();
             return;
         }
 
-        if (phone.isEmpty() || !phone.matches("\\d{10}")) {
-            registerPhone.setError("Enter a valid 10-digit phone number");
-            registerPhone.requestFocus();
+        if (dob.isEmpty()) {
+            Toast.makeText(this, "Please select Date of Birth", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        if (password.isEmpty() || password.length() < 6) {
-            registerPassword.setError("Password must be at least 6 characters");
-            registerPassword.requestFocus();
+        if (password.length() < 6) {
+            binding.registerPassword.setError("Minimum 6 characters required");
+            binding.registerPassword.requestFocus();
             return;
         }
 
         if (gender.isEmpty()) {
-            Toast.makeText(this, "Please select your gender", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        if (bloodGroup.equals("Select Blood Group")) {
-            Toast.makeText(this, "Please select your blood group", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Please select gender", Toast.LENGTH_SHORT).show();
             return;
         }
 
         if (district.equals("Select District")) {
-            Toast.makeText(this, "Please select your district", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Please select district", Toast.LENGTH_SHORT).show();
             return;
         }
 
         if (taluk.equals("Select Taluk")) {
-            Toast.makeText(this, "Please select your taluk", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Please select taluk", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Show loading
-        setLoading(true);
+        if (bloodGroup.equals("Select Blood Group")) {
+            Toast.makeText(this, "Please select blood group", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-        final String finalBloodGroup = bloodGroup;
-        final String finalDistrict = district;
-        final String finalTaluk = taluk;
-        final String finalGender = gender;
+        setLoading(true);
 
         mAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
-                        Log.d(TAG, "Registration successful");
-                        String userId = mAuth.getCurrentUser().getUid();
-
-                        // Explicitly use your Firebase Realtime DB URL
-                        DatabaseReference dbRef = FirebaseDatabase
-                                .getInstance("https://bloodbuddy-26803-default-rtdb.firebaseio.com")
-                                .getReference()
-                                .child("users")
-                                .child(userId);
-
-                        Map<String, Object> userMap = new HashMap<>();
-                        userMap.put("name", name);
-                        userMap.put("email", email);
-                        userMap.put("phone", phone);
-                        userMap.put("gender", finalGender);
-                        userMap.put("bloodGroup", finalBloodGroup);
-                        userMap.put("district", finalDistrict);
-                        userMap.put("taluk", finalTaluk);
-
-                        dbRef.setValue(userMap).addOnCompleteListener(dbTask -> {
-                            setLoading(false);
-                            if (dbTask.isSuccessful()) {
-                                Log.d(TAG, "User data saved to database");
-                                Toast.makeText(RegisterActivity.this,
-                                        "Registration successful! Please login.", Toast.LENGTH_LONG).show();
-                                startActivity(new Intent(RegisterActivity.this, LoginActivity.class));
-                                finish();
-                            } else {
-                                Log.e(TAG, "Failed to save user data", dbTask.getException());
-                                Toast.makeText(RegisterActivity.this,
-                                        "Account created but profile save failed. Please update profile after login.",
-                                        Toast.LENGTH_LONG).show();
-                                startActivity(new Intent(RegisterActivity.this, LoginActivity.class));
-                                finish();
-                            }
-                        });
-
+                        FirebaseUser firebaseUser = mAuth.getCurrentUser();
+                        if (firebaseUser != null) {
+                            String userId = firebaseUser.getUid();
+                            
+                            User newUser = new User(userId, name, email, phone, "Karnataka", district, taluk, gender, bloodGroup, dob);
+                            
+                            db.collection("users").document(userId)
+                                    .set(newUser)
+                                    .addOnSuccessListener(aVoid -> {
+                                        setLoading(false);
+                                        Toast.makeText(RegisterActivity.this, "Registration Successful!", Toast.LENGTH_SHORT).show();
+                                        Intent intent = new Intent(RegisterActivity.this, DomainActivity.class);
+                                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                        startActivity(intent);
+                                        finish();
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        setLoading(false);
+                                        Toast.makeText(RegisterActivity.this, "Failed to save profile: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                                        firebaseUser.delete();
+                                    });
+                        }
                     } else {
                         setLoading(false);
-                        Log.e(TAG, "Registration failed", task.getException());
-                        if (task.getException() instanceof FirebaseAuthException) {
-                            FirebaseAuthException authEx = (FirebaseAuthException) task.getException();
-                            String errorCode = authEx.getErrorCode();
-                            if (errorCode.equals("ERROR_EMAIL_ALREADY_IN_USE")) {
-                                Toast.makeText(this, "This email is already registered. Please login.", Toast.LENGTH_LONG).show();
-                            } else if (errorCode.equals("ERROR_WEAK_PASSWORD")) {
-                                Toast.makeText(this, "Password is too weak. Use at least 6 characters.", Toast.LENGTH_LONG).show();
-                            } else if (errorCode.equals("ERROR_INVALID_EMAIL")) {
-                                Toast.makeText(this, "Invalid email address.", Toast.LENGTH_LONG).show();
-                            } else {
-                                Toast.makeText(this, "Registration failed: " + authEx.getMessage(), Toast.LENGTH_LONG).show();
-                            }
-                        } else {
-                            Toast.makeText(this, "Registration failed. Check your internet connection.", Toast.LENGTH_LONG).show();
-                        }
+                        Toast.makeText(RegisterActivity.this, "Auth Failed: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
                     }
                 });
     }
 
     private void setLoading(boolean loading) {
         if (loading) {
-            registerButton.setEnabled(false);
-            registerButton.setText("Creating Account...");
-            progressBar.setVisibility(View.VISIBLE);
+            binding.registerButton.setVisibility(View.GONE);
+            binding.progressBar.setVisibility(View.VISIBLE);
         } else {
-            registerButton.setEnabled(true);
-            registerButton.setText("CREATE ACCOUNT");
-            progressBar.setVisibility(View.GONE);
+            binding.registerButton.setVisibility(View.VISIBLE);
+            binding.progressBar.setVisibility(View.GONE);
         }
     }
 }

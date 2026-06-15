@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/admin_nav_dashboard"
+            android:icon="@drawable/ic_notification"
+            android:title="Dashboard"
+            android:checked="true" />
+        <item
+            android:id="@+id/admin_nav_donors"
+            android:icon="@drawable/baseline_groups_24"
+            android:title="Donors List" />
+        <item
+            android:id="@+id/admin_nav_sos"
+            android:icon="@drawable/nearby"
+            android:title="SOS Requests" />
+        <item
+            android:id="@+id/admin_nav_users"
+            android:icon="@drawable/baseline_person_pin_circle_24"
+            android:title="All Users" />
+        <item
+            android:id="@+id/admin_nav_feedbacks"
+            android:icon="@drawable/baseline_feedback_24"
+            android:title="Feedbacks" />
+        <item
+            android:id="@+id/admin_nav_carousel"
+            android:icon="@drawable/baseline_cloud_upload_24"
+            android:title="Manage Carousel" />
+    </group>
+
+    <group>
+        <item
+            android:id="@+id/admin_nav_logout"
+            android:icon="@drawable/logout"
+            android:title="Logout" />
+    </group>
+
+</menu>

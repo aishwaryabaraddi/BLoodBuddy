@@ -3,173 +3,273 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#FFFFFF"
+    tools:context=".ReceiverActivity">
 
     <!-- Header -->
-
-    <!-- Content -->
     <androidx.appcompat.widget.Toolbar
-        android:id="@+id/custom_toolbar"
+        android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="#EC3E3E"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:layout_height="?attr/actionBarSize"
+        android:background="#C62828"
+        app:contentInsetStart="0dp"
+        app:layout_constraintTop_toTopOf="parent">
 
-    <LinearLayout
-        android:id="@+id/content"
-        android:layout_width="0dp"
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <ImageView
+                android:id="@+id/imageViewBack"
+                android:layout_width="48dp"
+                android:layout_height="match_parent"
+                android:layout_alignParentStart="true"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:padding="12dp"
+                app:srcCompat="@drawable/baseline_arrow_back_24"
+                app:tint="@color/white" />
+
+            <TextView
+                android:id="@+id/toolbar_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_toEndOf="@id/imageViewBack"
+                android:text="Blood Request"
+                android:textColor="@color/white"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:layout_marginEnd="16dp"
+                android:text="Version 1.0.0"
+                android:textColor="@color/white"
+                android:textSize="12sp" />
+        </RelativeLayout>
+    </androidx.appcompat.widget.Toolbar>
+
+    <ScrollView
+        android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:background="@drawable/login2"
-        android:orientation="vertical"
-        android:padding="16dp"
-        app:layout_constraintBottom_toTopOf="@id/footer"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/custom_toolbar">
+        android:clipToPadding="false"
+        app:layout_constraintBottom_toTopOf="@+id/footer"
+        app:layout_constraintTop_toBottomOf="@+id/toolbar">
 
-        <EditText
-            android:id="@+id/etName"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:background="@drawable/edittext_background"
-            android:hint="Name"
-            android:inputType="textPersonName"
-            android:padding="8dp"
-            android:textColor="@color/black"
-            android:textSize="20sp" />
+            android:orientation="vertical">
 
-        <EditText
-            android:id="@+id/etPhonenumber"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:background="@drawable/edittext_background"
-            android:hint="Contact"
-            android:inputType="phone"
-            android:padding="8dp"
-            android:textColor="@color/black"
-            android:textSize="20sp" />
+            <!-- Form Card -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="16dp"
+                android:background="@android:color/white"
+                android:orientation="vertical"
+                android:padding="24dp">
 
-        <Spinner
-            android:id="@+id/etDistrict"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:background="@drawable/edittext_background"
-            android:padding="8dp"
-            android:textSize="20sp" />
+                <!-- Patient Name -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Patient Name *"
+                    android:textColor="#C62828"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
 
-        <Spinner
-            android:id="@+id/etTaluk"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:background="@drawable/edittext_background"
-            android:padding="8dp"
-            android:textSize="20sp" />
+                <EditText
+                    android:id="@+id/etName"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="6dp"
+                    android:layout_marginBottom="16dp"
+                    android:background="@drawable/edit_text_background"
+                    android:hint="Enter patient name"
+                    android:inputType="textPersonName"
+                    android:padding="12dp"
+                    android:textColor="#212121"
+                    android:textColorHint="#9E9E9E"
+                    android:textSize="16sp"
+                    android:importantForAutofill="no" />
 
-        <Spinner
-            android:id="@+id/etBloodGroup"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:background="@drawable/edittext_background"
-            android:padding="8dp"
-            android:textSize="20sp" />
+                <!-- Contact Number -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Contact Number *"
+                    android:textColor="#C62828"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
 
-        <EditText
-            android:id="@+id/etToWhomFor"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:background="@drawable/edittext_background"
-            android:hint="To whom for"
-            android:inputType="text"
-            android:padding="8dp"
-            android:textColor="@color/black"
-            android:textSize="20sp" />
+                <EditText
+                    android:id="@+id/etPhonenumber"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="6dp"
+                    android:layout_marginBottom="16dp"
+                    android:background="@drawable/edit_text_background"
+                    android:hint="10-digit mobile number"
+                    android:inputType="phone"
+                    android:maxLength="10"
+                    android:padding="12dp"
+                    android:textColor="#212121"
+                    android:textColorHint="#9E9E9E"
+                    android:textSize="16sp"
+                    android:importantForAutofill="no" />
 
-        <EditText
-            android:id="@+id/etLocation"
-            android:layout_width="match_parent"
-            android:layout_height="65dp"
-            android:layout_marginTop="20dp"
-            android:background="@drawable/edittext_background"
-            android:hint="Location"
-            android:inputType="textMultiLine"
-            android:padding="8dp"
-            android:textColor="@color/black"
-            android:textSize="16sp" />
+                <!-- Required Blood Group -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Required Blood Group *"
+                    android:textColor="#C62828"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
 
-        <Button
-            android:id="@+id/btnSubmit"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:background="@drawable/button_background"
-            android:text="SUBMIT"
-            android:textColor="@android:color/white"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-    </LinearLayout>
+                <Spinner
+                    android:id="@+id/etBloodGroup"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="6dp"
+                    android:layout_marginBottom="16dp"
+                    android:background="@drawable/edit_text_background"
+                    android:padding="12dp"
+                    android:spinnerMode="dropdown" />
+
+                <!-- District -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="District *"
+                    android:textColor="#C62828"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <Spinner
+                    android:id="@+id/etDistrict"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="6dp"
+                    android:layout_marginBottom="16dp"
+                    android:background="@drawable/edit_text_background"
+                    android:padding="12dp"
+                    android:spinnerMode="dropdown" />
+
+                <!-- Taluk -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Taluk *"
+                    android:textColor="#C62828"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <Spinner
+                    android:id="@+id/etTaluk"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="6dp"
+                    android:layout_marginBottom="16dp"
+                    android:background="@drawable/edit_text_background"
+                    android:padding="12dp"
+                    android:spinnerMode="dropdown" />
+
+                <!-- Required for -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Required for (Reason) *"
+                    android:textColor="#C62828"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/etToWhomFor"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="6dp"
+                    android:layout_marginBottom="16dp"
+                    android:background="@drawable/edit_text_background"
+                    android:hint="e.g. Surgery, Accident, etc."
+                    android:inputType="text"
+                    android:padding="12dp"
+                    android:textColor="#212121"
+                    android:textColorHint="#9E9E9E"
+                    android:textSize="16sp"
+                    android:importantForAutofill="no" />
+
+                <!-- Hospital Name / Address -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Hospital Name / Address *"
+                    android:textColor="#C62828"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/etLocation"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:layout_marginBottom="24dp"
+                    android:background="@drawable/edit_text_background"
+                    android:hint="Enter hospital address"
+                    android:inputType="textMultiLine"
+                    android:minLines="2"
+                    android:padding="12dp"
+                    android:textColor="#212121"
+                    android:textColorHint="#9E9E9E"
+                    android:textSize="14sp"
+                    android:importantForAutofill="no" />
+
+                <!-- Submit Button -->
+                <Button
+                    android:id="@+id/btnSubmit"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:backgroundTint="#C62828"
+                    android:text="POST REQUEST"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <!-- Loading indicator -->
+                <ProgressBar
+                    android:id="@+id/progressBar"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="12dp"
+                    android:indeterminateTint="#C62828"
+                    android:visibility="gone" />
+
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
 
     <!-- Footer -->
     <LinearLayout
         android:id="@+id/footer"
-        android:layout_width="0dp"
-        android:layout_height="57dp"
-        android:background="#EC3E3E"
-        android:orientation="vertical"
-        android:padding="16dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:background="#C62828"
+        android:gravity="center"
+        app:layout_constraintBottom_toBottomOf="parent">
 
         <TextView
-            android:id="@+id/footerText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_centerHorizontal="true"
-            android:layout_gravity="center"
-            android:text="BloodBuddy"
+            android:text="Blood Buddy"
             android:textColor="@color/white"
-            android:textSize="18sp"
+            android:textSize="16sp"
             android:textStyle="bold" />
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/textView4"
-        android:layout_width="222dp"
-        android:layout_height="36dp"
-        android:layout_marginTop="12dp"
-        android:layout_marginEnd="120dp"
-        android:layout_weight="1"
-        android:gravity="center_vertical"
-        android:text="Receiver"
-        android:textColor="@color/white"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        app:layout_constraintEnd_toEndOf="@+id/custom_toolbar"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <TextView
-        android:id="@+id/textView13"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="6dp"
-        android:text="Version 1.0.0"
-        android:textColor="@color/white"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/custom_toolbar" />
-
-    <ImageView
-        android:id="@+id/imageViewBack"
-        android:layout_width="39dp"
-        android:layout_height="30dp"
-        android:layout_marginTop="16dp"
-        app:layout_constraintStart_toStartOf="@+id/custom_toolbar"
-        app:layout_constraintTop_toTopOf="@+id/custom_toolbar"
-        app:srcCompat="@drawable/baseline_arrow_back_24" />
 </androidx.constraintlayout.widget.ConstraintLayout>

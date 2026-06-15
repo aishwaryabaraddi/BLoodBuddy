@@ -6,152 +6,340 @@
     android:id="@+id/drawer_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".DomainActivity">
+    tools:context=".DomainActivity"
+    android:fitsSystemWindows="true">
 
-    <!-- Main content -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:background="#F8F9FA"
+        android:clipChildren="false"
+        android:clipToPadding="false">
 
-        <!-- Toolbar -->
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
-            android:layout_width="408dp"
-            android:layout_height="58dp"
-            android:background="#EC3E3E"
-            android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
-            app:titleTextColor="@color/white">
+        <!-- Top Header Background -->
+        <View
+            android:id="@+id/header_bg"
+            android:layout_width="match_parent"
+            android:layout_height="220dp"
+            android:background="#C62828"
+            android:elevation="0dp"
+            app:layout_constraintTop_toTopOf="parent" />
 
-            <!-- Hamburger Menu Icon -->
-            <ImageView
-                android:id="@+id/imageView"
-                android:layout_width="40dp"
-                android:layout_height="50dp"
-                android:layout_margin="10dp"
-                android:src="@drawable/baseline_menu_24"
-                app:itemIconTint="@color/white"
-                app:itemRippleColor="@color/white"
-                tools:layout_editor_absoluteX="16dp"
-                tools:layout_editor_absoluteY="15dp" />
-        </androidx.appcompat.widget.Toolbar>
-
-        <!-- Rest of your layout -->
-
+        <!-- Header Content -->
         <LinearLayout
-            android:id="@+id/content"
+            android:id="@+id/header_content"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp"
+            android:elevation="1dp"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <ImageView
+                    android:id="@+id/btn_menu"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:padding="4dp"
+                    android:src="@drawable/baseline_menu_24"
+                    app:tint="@color/white" />
+
+                <TextView
+                    android:id="@+id/user_welcome"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
+                    android:layout_marginStart="12dp"
+                    android:layout_toEndOf="@id/btn_menu"
+                    android:text="Hello, viju!"
+                    android:textColor="@color/white"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+            </RelativeLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="Every drop counts."
+                android:textColor="#FFCDD2"
+                android:textSize="14sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Be the reason for someone's heartbeat."
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Main Content Scroll - Elevation 0dp to stay behind FAB -->
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/main_content_scroll"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:background="@drawable/dom_background"
-            android:orientation="vertical"
-            android:padding="16dp"
+            android:background="@android:color/transparent"
+            android:elevation="0dp"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:paddingBottom="80dp"
             app:layout_constraintBottom_toTopOf="@id/footer"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="1.0"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/toolbar"
-            app:layout_constraintVertical_bias="1.0">
-
-
-            <!-- Your buttons and other views -->
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_marginTop="165dp">
 
             <LinearLayout
-                android:layout_width="411dp"
-                android:layout_height="291dp"
-                android:layout_marginLeft="-15dp"
-                android:layout_marginRight="-15dp"
-                android:orientation="vertical">
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingHorizontal="16dp"
+                android:paddingTop="10dp"
+                android:clipChildren="false"
+                android:clipToPadding="false">
 
-                <androidx.cardview.widget.CardView
-                    android:layout_width="346dp"
-                    android:layout_height="247dp"
-                    android:layout_marginStart="26dp"
-                    android:layout_marginLeft="-15dp"
-                    android:layout_marginTop="20dp"
-                    android:layout_marginRight="25dp"
+                <!-- Active SOS Status Card -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/request_status_card"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:visibility="gone"
                     app:cardCornerRadius="16dp"
-                    app:cardElevation="8dp">
-
-                    <androidx.viewpager2.widget.ViewPager2
-                        android:id="@+id/viewPager"
+                    app:cardElevation="10dp"
+                    app:cardBackgroundColor="#E3F2FD"
+                    app:strokeWidth="0dp">
+                    <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="246dp"
-                        android:layout_marginStart="0dp" />
-                </androidx.cardview.widget.CardView>
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🚨 YOUR ACTIVE SOS"
+                            android:textColor="#1976D2"
+                            android:textStyle="bold"
+                            android:textSize="11sp"
+                            android:letterSpacing="0.1"/>
+                        <TextView
+                            android:id="@+id/request_status_title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="Finding nearby donors..."
+                            android:textSize="17sp"
+                            android:textStyle="bold"
+                            android:textColor="#212121"/>
+                        <TextView
+                            android:id="@+id/request_status_subtitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Donors are being notified."
+                            android:textSize="13sp"
+                            android:textColor="#546E7A"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Donor Status Card -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/donor_status_card"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:visibility="gone"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="8dp"
+                    app:cardBackgroundColor="#E8F5E9"
+                    app:strokeWidth="0dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🩸 DONOR STATUS"
+                            android:textColor="#2E7D32"
+                            android:textStyle="bold"
+                            android:textSize="11sp"
+                            android:letterSpacing="0.1"/>
+                        <TextView
+                            android:id="@+id/donor_status_title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="Status: Ready to Save Lives"
+                            android:textSize="17sp"
+                            android:textStyle="bold"
+                            android:textColor="#212121"/>
+                        <TextView
+                            android:id="@+id/donor_status_subtitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="You are eligible to donate."
+                            android:textSize="13sp"
+                            android:textColor="#546E7A"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Carousel Card -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="24dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="6dp"
+                    app:strokeWidth="0dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Recent News &amp; Tips"
+                            android:textColor="#C62828"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+                        <androidx.viewpager2.widget.ViewPager2
+                            android:id="@+id/viewPager"
+                            android:layout_width="match_parent"
+                            android:layout_height="140dp"
+                            android:layout_marginTop="12dp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:layout_marginStart="4dp"
+                    android:text="Quick Actions"
+                    android:textColor="#212121"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <GridLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:columnCount="2"
+                    android:rowCount="1">
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="180dp"
+                        android:layout_columnWeight="1"
+                        android:layout_margin="8dp"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="4dp"
+                        app:strokeWidth="0dp">
+                        <LinearLayout
+                            android:id="@+id/button1_container"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:background="?attr/selectableItemBackground">
+                            <ImageView
+                                android:layout_width="64dp"
+                                android:layout_height="64dp"
+                                android:src="@drawable/blood"
+                                android:padding="8dp"/>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="12dp"
+                                android:text="DONATE\nBLOOD"
+                                android:textAlignment="center"
+                                android:textColor="#C62828"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/btn_request_blood"
+                        android:layout_width="0dp"
+                        android:layout_height="180dp"
+                        android:layout_columnWeight="1"
+                        android:layout_margin="8dp"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="4dp"
+                        app:strokeWidth="0dp">
+                        <LinearLayout
+                            android:id="@+id/button2_container"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:background="?attr/selectableItemBackground">
+                            <TextView
+                                android:layout_width="64dp"
+                                android:layout_height="64dp"
+                                android:gravity="center"
+                                android:text="🆘"
+                                android:textSize="40sp"/>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="12dp"
+                                android:text="REQUEST\nBLOOD"
+                                android:textAlignment="center"
+                                android:textColor="#1976D2"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                </GridLayout>
             </LinearLayout>
-        </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
 
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/footer"
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="#EC3E3E"
+            android:background="@android:color/white"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:menu="@menu/bottom_nav_menu"
-            app:itemTextColor="@color/white"
-            app:itemIconTint="@color/white"
-            app:itemRippleColor="@color/white"
-            app:itemTextAppearanceActive="@style/BottomNavigationViewLabelStyle"
-            app:itemTextAppearanceInactive="@style/BottomNavigationViewLabelStyle"
+            app:elevation="8dp"
             app:labelVisibilityMode="labeled"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"/>
+            app:itemIconTint="#757575"
+            app:itemTextColor="#757575"/>
 
-
-        <!-- Circular Buttons -->
-        <Button
-            android:id="@+id/button1"
-            android:layout_width="110dp"
-            android:layout_height="100dp"
-            android:layout_marginStart="45dp"
-            android:layout_marginBottom="100dp"
-            android:background="@drawable/circle_button"
-            android:backgroundTint="#EC3E3E"
-            android:gravity="center"
-            android:text="Donate Blood"
+        <!-- High elevation and translationZ to ensure it stays on top of everything -->
+        <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+            android:id="@+id/fab_ai_chat"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="20dp"
+            android:text="AI Help"
             android:textColor="@color/white"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
-
-        <Button
-            android:id="@+id/button2"
-            android:layout_width="110dp"
-            android:layout_height="100dp"
-            android:layout_marginStart="92dp"
-            android:layout_marginBottom="100dp"
-            android:background="@drawable/circle_button"
-            android:backgroundTint="#EC3E3E"
-            android:gravity="center"
-            android:text="Request blood"
-            android:textColor="@color/white"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toEndOf="@id/button1" />
-
-        <TextView
-            android:id="@+id/textView5"
-            android:layout_width="151dp"
-            android:layout_height="37dp"
-            android:layout_marginStart="60dp"
-            android:layout_marginBottom="6dp"
-            android:text="Blood Buddy"
-            android:textColor="#FBF1F1"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            app:layout_constraintBottom_toTopOf="@+id/content"
-            app:layout_constraintStart_toStartOf="@+id/toolbar" />
+            android:elevation="50dp"
+            android:translationZ="50dp"
+            app:elevation="50dp"
+            app:pressedTranslationZ="55dp"
+            app:icon="@drawable/baseline_auto_awesome_24"
+            app:iconTint="@color/white"
+            app:backgroundTint="#C62828"
+            app:layout_constraintBottom_toTopOf="@id/footer"
+            app:layout_constraintEnd_toEndOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- Navigation view -->
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/nav_view"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:layout_gravity="start"
-        android:fitsSystemWindows="true"
         app:headerLayout="@layout/header"
         app:menu="@menu/main_menu" />
 

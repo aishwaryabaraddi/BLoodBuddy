@@ -1,204 +1,301 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#F8F9FA"
     tools:context=".NearbyHospitalsActivity">
 
     <!-- Header -->
-    <LinearLayout
-        android:id="@+id/header"
-        android:layout_width="0dp"
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#EC3E3E"
-        android:orientation="horizontal"
-        android:padding="16dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        android:background="#C62828"
+        app:elevation="4dp">
 
-        <ImageView
-            android:id="@+id/imageView10"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="start|right"
-            android:layout_marginLeft="-115dp"
-            android:layout_marginTop="0dp"
-            android:layout_weight="1"
-            app:srcCompat="@drawable/baseline_arrow_back_24" />
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:contentInsetStartWithNavigation="0dp">
 
-        <!-- Title -->
-        <TextView
-            android:id="@+id/titleTextView"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Nearby Hospitals"
-            android:layout_marginLeft="-110dp"
-            android:textColor="@android:color/white"
-            android:textSize="20sp" />
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
 
-        <!-- Version -->
-        <TextView
-            android:id="@+id/versionTextView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Version 1.0.0"
-            android:textAlignment="viewEnd"
-            android:textColor="#FFFCFC"
-            android:textSize="12sp" />
-    </LinearLayout>
+                <ImageView
+                    android:id="@+id/imageView10"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_centerVertical="true"
+                    android:layout_marginStart="8dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:padding="8dp"
+                    android:src="@drawable/baseline_arrow_back_24"
+                    app:tint="@android:color/white" />
 
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerInParent="true"
+                    android:text="Nearby Hospitals"
+                    android:textColor="@android:color/white"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
 
+                <!-- v1.0.0 label removed -->
+            </RelativeLayout>
+        </androidx.appcompat.widget.Toolbar>
+    </com.google.android.material.appbar.AppBarLayout>
 
+    <!-- Map Area -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-    <!-- MapView -->
-    <com.esri.arcgisruntime.mapping.view.MapView
-        android:id="@+id/mapView"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/header"
-        app:layout_constraintVertical_bias="1.0" >
-
-        <FrameLayout
-            android:id="@+id/requestFormContainer"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="16dp"
-            android:visibility="gone"
-            app:layout_constraintTop_toTopOf="parent"
+        <org.osmdroid.views.MapView
+            android:id="@+id/mapView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:clickable="true"
             app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <!-- Floating Info HUD -->
+        <TextView
+            android:id="@+id/textNearbyHospitals"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/rounded_button"
+            android:backgroundTint="#D9000000"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="8dp"
+            android:text="Searching..."
+            android:textColor="@android:color/white"
+            android:textSize="13sp"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
+            app:layout_constraintTop_toTopOf="parent" />
 
-    </com.esri.arcgisruntime.mapping.view.MapView>
+        <!-- Hospital Detail Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/hospitalDetailsCardView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="20dp"
+            android:visibility="gone"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="12dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:strokeWidth="0dp"
+            app:cardBackgroundColor="@android:color/white">
 
-    <!-- CardView for hospital details -->
-    <androidx.cardview.widget.CardView
-        android:id="@+id/hospitalDetailsCardView"
-        android:layout_width="0dp"
-        android:layout_height="180dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="16dp"
-        android:translationY="230dp"
-        android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@id/footer"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/header">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_toStartOf="@+id/hospitalIconImageView"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/hospitalNameTextView"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Hospital Name"
+                            android:textColor="#212121"
+                            android:textSize="18sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/hospitalDistanceTextView"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="0.0 km"
+                            android:textColor="#C62828"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <ImageView
+                            android:id="@+id/hospitalIconImageView"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:background="@drawable/circle_button"
+                            android:backgroundTint="#FEEBEE"
+                            android:padding="12dp"
+                            android:src="@drawable/baseline_directions_24"
+                            app:tint="#C62828" />
+
+                        <ImageView
+                            android:id="@+id/btnCloseCard"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:layout_marginStart="8dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:padding="6dp"
+                            android:src="@drawable/baseline_close_24"
+                            app:tint="#9E9E9E" />
+                    </LinearLayout>
+                </RelativeLayout>
+
+                <TextView
+                    android:id="@+id/hospitalAddressTextView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:alpha="0.8"
+                    android:text="Address loading..."
+                    android:textColor="#424242"
+                    android:textSize="13sp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="16dp"
+                    android:background="#F0F0F0" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <TextView
+                        android:id="@+id/hospitalLatTextView"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Lat: --"
+                        android:textColor="#9E9E9E"
+                        android:textSize="11sp" />
+                    <TextView
+                        android:id="@+id/hospitalLonTextView"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Lon: --"
+                        android:textColor="#9E9E9E"
+                        android:textSize="11sp" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:indeterminateTint="#C62828"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- Bottom Nav -->
+    <com.google.android.material.bottomappbar.BottomAppBar
+        android:id="@+id/bottomAppBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:backgroundTint="@android:color/white"
+        app:contentInsetStart="0dp"
+        app:contentInsetEnd="0dp">
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
+            android:layout_height="60dp"
+            android:orientation="horizontal"
+            android:weightSum="3">
 
-            <TextView
-                android:id="@+id/hospitalNameTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Hospital Name"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/hospitalDistanceTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Distance : 0 km"
-                android:textSize="16sp" />
-
-            <TextView
-                android:id="@+id/hospitalAddressTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Address details here"
-                android:textSize="16sp" />
-
-            <TextView
-                android:id="@+id/hospitalLatTextView"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Latitude: "
-                android:textSize="14sp" />
-
-            <TextView
-                android:id="@+id/hospitalLonTextView"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Longitude: "
-                android:textSize="14sp" />
-
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-<!--                <Button-->
-<!--                    android:id="@+id/makeRequestButton"-->
-<!--                    android:layout_width="150dp"-->
-<!--                    android:layout_height="40dp"-->
-<!--                    android:background="@drawable/rounded_button"-->
-<!--                    android:text="Make Request"-->
-<!--                    android:textSize="14sp"-->
-<!--                    app:layout_constraintTop_toTopOf="parent"-->
-<!--                    app:layout_constraintBottom_toBottomOf="parent"-->
-<!--                    app:layout_constraintStart_toStartOf="parent" />-->
-
+            <LinearLayout
+                android:id="@+id/nav_donors"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                android:gravity="center"
+                android:orientation="vertical">
                 <ImageView
-                    android:id="@+id/hospitalIconImageView"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
-                    android:clickable="true"
-                    android:contentDescription="Hospital Icon"
-                    android:src="@drawable/baseline_directions_24"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/baseline_groups_24"
+                    app:tint="#9E9E9E" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Donors"
+                    android:textColor="#9E9E9E"
+                    android:textSize="10sp" />
+            </LinearLayout>
 
-            </androidx.constraintlayout.widget.ConstraintLayout>
+            <LinearLayout
+                android:id="@+id/nav_hospitals"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/baseline_local_hospital_24"
+                    app:tint="#C62828" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Hospitals"
+                    android:textColor="#C62828"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
 
+            <LinearLayout
+                android:id="@+id/nav_chat"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                android:gravity="center"
+                android:orientation="vertical">
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/baseline_auto_awesome_24"
+                    app:tint="#9E9E9E" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="AI Chat"
+                    android:textColor="#9E9E9E"
+                    android:textSize="10sp" />
+            </LinearLayout>
         </LinearLayout>
-    </androidx.cardview.widget.CardView>
+    </com.google.android.material.bottomappbar.BottomAppBar>
 
-    <!-- Footer -->
-    <LinearLayout
-        android:id="@+id/footer"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:background="#EC3E3E"
-        android:orientation="horizontal"
-        android:padding="16dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
-
-        <!-- App Name -->
-        <TextView
-            android:id="@+id/appNameTextView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="150dp"
-            android:text="Blood Buddy"
-            android:textColor="@android:color/white"
-            android:textSize="16sp"
-            android:textStyle="bold" />
-    </LinearLayout>
-
-    <ProgressBar
-        android:id="@+id/progressBar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="@id/mapView"
-        app:layout_constraintEnd_toEndOf="@id/mapView"
-        app:layout_constraintStart_toStartOf="@id/mapView"
-        app:layout_constraintTop_toTopOf="@id/mapView" />
-
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

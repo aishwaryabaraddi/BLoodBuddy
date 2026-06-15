@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Donor Health Declaration"
+        android:textColor="#C62828"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Please verify that you meet the following medical requirements:"
+        android:textSize="14sp"
+        android:layout_marginBottom="12dp" />
+
+    <CheckBox
+        android:id="@+id/cb_no_diseases"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="I do not have HIV, Hepatitis, or any chronic heart/lung disease."
+        android:layout_marginBottom="8dp" />
+
+    <CheckBox
+        android:id="@+id/cb_no_medication"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="I am not currently taking antibiotics or any major medications."
+        android:layout_marginBottom="8dp" />
+
+    <CheckBox
+        android:id="@+id/cb_no_tattoos"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="I haven't had a tattoo or major surgery in the last 6 months."
+        android:layout_marginBottom="8dp" />
+
+    <CheckBox
+        android:id="@+id/cb_healthy_feel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="I feel healthy and have not had a fever in the last 24 hours."
+        android:layout_marginBottom="8dp" />
+
+</LinearLayout>

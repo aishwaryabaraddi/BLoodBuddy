@@ -47,8 +47,8 @@ public class DonorAdapter extends RecyclerView.Adapter<DonorAdapter.DonorViewHol
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(context, RequestActivity.class);
-                intent.putExtra("donorId", donor.getid()); // Pass donor ID to RequestActivity
-                intent.putExtra("userId", donor.getRequestUserId()); // Pass user ID who requested
+                intent.putExtra("donorId", donor.getId()); // Pass donor ID to RequestActivity
+                intent.putExtra("userId", donor.getId()); // Pass donor ID as user ID
                 context.startActivity(intent);
             }
         });
