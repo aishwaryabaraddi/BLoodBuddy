@@ -5,8 +5,11 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import com.google.firebase.auth.FirebaseAuth;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
@@ -58,12 +61,17 @@ public class MapActivity extends AppCompatActivity {
     private CardView personDetailsCard;
     private TextView tvCardName, tvCardBloodBadge, tvCardType, tvCardPhone;
     private ProgressBar mapProgressBar;
+    private android.widget.LinearLayout bloodGroupChipRow;
     private View legendIconCard;   // parent CardView of donor button
     private View requestIconCard;  // parent CardView of request button
 
-    // Data
-    private int donorCount   = 0;
-    private int requestCount = 0;
+    // Data — raw lists stored so blood-group filter can re-draw without a new Firestore fetch
+    private final java.util.List<Donor>    allDonors   = new java.util.ArrayList<>();
+    private final java.util.List<Receiver> allRequests = new java.util.ArrayList<>();
+    private String selectedBloodGroup = "All";
+    private double myLat = 0, myLon = 0;
+    private boolean donorsLoaded   = false;
+    private boolean requestsLoaded = false;
     private String currentPhone = "";
 
     private FusedLocationProviderClient fusedLocationClient;
@@ -86,6 +94,7 @@ public class MapActivity extends AppCompatActivity {
         tvCardType       = findViewById(R.id.tvCardType);
         tvCardPhone      = findViewById(R.id.tvCardPhone);
         mapProgressBar   = findViewById(R.id.mapProgressBar);
+        bloodGroupChipRow = findViewById(R.id.blood_group_chip_row);
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         db = FirebaseFirestore.getInstance();
@@ -116,6 +125,10 @@ public class MapActivity extends AppCompatActivity {
         findViewById(R.id.legendIcon).setOnClickListener(v -> toggleDonors());
         findViewById(R.id.legendIconReceivers).setOnClickListener(v -> toggleRequests());
 
+        // blood.png has no XML tint — apply white so it shows on the red (active) card bg
+        ((android.widget.ImageView) findViewById(R.id.legendIconReceivers))
+                .setImageTintList(android.content.res.ColorStateList.valueOf(0xFFFFFFFF));
+
         // Close detail card
         findViewById(R.id.btnCloseCard).setOnClickListener(v ->
                 personDetailsCard.setVisibility(View.GONE));
@@ -130,6 +143,7 @@ public class MapActivity extends AppCompatActivity {
         });
 
         setupBottomNav();
+        setupBloodGroupFilter();
         checkPermissions();
     }
 
@@ -157,6 +171,59 @@ public class MapActivity extends AppCompatActivity {
         } catch (Exception e) {
             Log.w(TAG, "Could not set custom location icon", e);
             // Falls back to OSMDroid's default white arrow — no crash
+        }
+    }
+
+    // ─── Blood group filter chips ─────────────────────────────────────────────
+
+    private void setupBloodGroupFilter() {
+        String[] groups = {"All", "A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"};
+        float density = getResources().getDisplayMetrics().density;
+        int hPad = Math.round(14 * density);
+        int vPad = Math.round(6 * density);
+        int gap  = Math.round(8 * density);
+
+        for (String bg : groups) {
+            TextView chip = new TextView(this);
+            chip.setText(bg);
+            chip.setTextSize(12);
+            chip.setTypeface(null, android.graphics.Typeface.BOLD);
+            chip.setPadding(hPad, vPad, hPad, vPad);
+
+            android.widget.LinearLayout.LayoutParams lp =
+                    new android.widget.LinearLayout.LayoutParams(
+                            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+            lp.setMargins(0, 0, gap, 0);
+            chip.setLayoutParams(lp);
+
+            updateChipStyle(chip, bg.equals(selectedBloodGroup));
+
+            chip.setOnClickListener(v -> {
+                selectedBloodGroup = bg;
+                for (int i = 0; i < bloodGroupChipRow.getChildCount(); i++) {
+                    android.view.View child = bloodGroupChipRow.getChildAt(i);
+                    if (child instanceof TextView) {
+                        updateChipStyle((TextView) child,
+                                ((TextView) child).getText().toString().equals(bg));
+                    }
+                }
+                if (donorsLoaded && requestsLoaded) applyBloodGroupFilter();
+            });
+
+            bloodGroupChipRow.addView(chip);
+        }
+    }
+
+    private void updateChipStyle(TextView chip, boolean selected) {
+        if (selected) {
+            chip.setBackgroundResource(R.drawable.rounded_button);
+            chip.getBackground().mutate().setTint(0xFFC62828);
+            chip.setTextColor(0xFFFFFFFF);
+        } else {
+            chip.setBackgroundResource(R.drawable.rounded_button);
+            chip.getBackground().mutate().setTint(0xFFF5F5F5);
+            chip.setTextColor(0xFF424242);
         }
     }
 
@@ -202,13 +269,15 @@ public class MapActivity extends AppCompatActivity {
         fusedLocationClient.getLastLocation().addOnCompleteListener(task -> {
             if (task.isSuccessful() && task.getResult() != null) {
                 Location loc = task.getResult();
-                GeoPoint myPoint = new GeoPoint(loc.getLatitude(), loc.getLongitude());
+                myLat = loc.getLatitude();
+                myLon = loc.getLongitude();
+                GeoPoint myPoint = new GeoPoint(myLat, myLon);
                 mMapView.getController().animateTo(myPoint);
                 mMapView.getController().setZoom(13.0);
 
                 tvMapStats.setText("🔍 Finding donors & requests nearby...");
-                loadDonors(loc.getLatitude(), loc.getLongitude());
-                loadRequests(loc.getLatitude(), loc.getLongitude());
+                loadDonors();
+                loadRequests();
             } else {
                 mapProgressBar.setVisibility(View.GONE);
                 tvMapStats.setText("⚠️ Location unavailable. Enable GPS.");
@@ -219,106 +288,114 @@ public class MapActivity extends AppCompatActivity {
 
     // ─── Firebase Loading ─────────────────────────────────────────────────────
 
-    private void loadDonors(double myLat, double myLon) {
+    private void loadDonors() {
         db.collection("donors").get().addOnCompleteListener(task -> {
             if (!task.isSuccessful()) {
                 Log.e(TAG, "Failed to load donors", task.getException());
+                donorsLoaded = true;
                 checkLoadingDone();
                 return;
             }
-            donorCount = 0;
-            donorOverlay.getItems().clear();
-
+            allDonors.clear();
             for (QueryDocumentSnapshot doc : task.getResult()) {
                 Donor donor = doc.toObject(Donor.class);
                 double dLat = donor.getLatitude();
                 double dLon = donor.getLongitude();
-
-                // Skip if no location stored
                 if (dLat == 0.0 && dLon == 0.0) continue;
-
                 if (withinRadius(myLat, myLon, dLat, dLon)) {
-                    donorCount++;
-                    addMarker(donorOverlay, dLat, dLon,
-                            donor.getName(),
-                            donor.getBloodGroup(),
-                            donor.getPhoneNumber(),
-                            true);
+                    allDonors.add(donor);
                 }
             }
-            runOnUiThread(() -> {
-                tvDonorCount.setText(donorCount + " Donors");
-                mMapView.invalidate();
-                checkLoadingDone();
-            });
+            donorsLoaded = true;
+            checkLoadingDone();
         });
     }
 
-    private void loadRequests(double myLat, double myLon) {
-        db.collection("receivers")
-                .whereEqualTo("active", true)
-                .get()
+    private void loadRequests() {
+        String myUid = FirebaseAuth.getInstance().getCurrentUser() != null
+                ? FirebaseAuth.getInstance().getCurrentUser().getUid() : "";
+
+        db.collection("receivers").whereEqualTo("active", true).get()
                 .addOnCompleteListener(task -> {
             if (!task.isSuccessful()) {
                 Log.e(TAG, "Failed to load requests", task.getException());
+                requestsLoaded = true;
                 checkLoadingDone();
                 return;
             }
-            requestCount = 0;
-            requestOverlay.getItems().clear();
-
+            allRequests.clear();
             for (QueryDocumentSnapshot doc : task.getResult()) {
                 Receiver receiver = doc.toObject(Receiver.class);
+                if (myUid.equals(receiver.getUserId())) continue;
                 double rLat = receiver.getLatitude();
                 double rLon = receiver.getLongitude();
-
                 if (rLat == 0.0 && rLon == 0.0) continue;
-
                 if (withinRadius(myLat, myLon, rLat, rLon)) {
-                    requestCount++;
-                    addMarker(requestOverlay, rLat, rLon,
-                            receiver.getName(),
-                            receiver.getBloodGroup(),
-                            receiver.getPhoneNumber(),
-                            false);
+                    allRequests.add(receiver);
                 }
             }
-            runOnUiThread(() -> {
-                tvRequestCount.setText(requestCount + " Requests");
-                mMapView.invalidate();
-                checkLoadingDone();
-            });
+            requestsLoaded = true;
+            checkLoadingDone();
         });
     }
 
     private void checkLoadingDone() {
+        if (!donorsLoaded || !requestsLoaded) return;
         runOnUiThread(() -> {
             mapProgressBar.setVisibility(View.GONE);
-            if (donorCount == 0 && requestCount == 0) {
-                tvMapStats.setText("No donors or requests found within 50 km");
-            } else {
-                tvMapStats.setText("🩸 " + donorCount + " donor"
-                        + (donorCount != 1 ? "s" : "")
-                        + "  •  🆘 " + requestCount + " request"
-                        + (requestCount != 1 ? "s" : "")
-                        + " within 50 km");
-            }
+            applyBloodGroupFilter();
         });
+    }
+
+    /** Re-draws markers based on the currently selected blood group chip. */
+    private void applyBloodGroupFilter() {
+        donorOverlay.getItems().clear();
+        requestOverlay.getItems().clear();
+
+        int dCount = 0, rCount = 0;
+        for (Donor d : allDonors) {
+            if ("All".equals(selectedBloodGroup) || selectedBloodGroup.equals(d.getBloodGroup())) {
+                addMarker(donorOverlay, d.getLatitude(), d.getLongitude(),
+                        d.getName(), d.getBloodGroup(), d.getPhoneNumber(), true);
+                dCount++;
+            }
+        }
+        for (Receiver r : allRequests) {
+            if ("All".equals(selectedBloodGroup) || selectedBloodGroup.equals(r.getBloodGroup())) {
+                addMarker(requestOverlay, r.getLatitude(), r.getLongitude(),
+                        r.getName(), r.getBloodGroup(), r.getPhoneNumber(), false);
+                rCount++;
+            }
+        }
+
+        final int fd = dCount, fr = rCount;
+        tvDonorCount.setText(fd + " Donors");
+        tvRequestCount.setText(fr + " Requests");
+        if (fd == 0 && fr == 0) {
+            tvMapStats.setText("No results found within 50 km"
+                    + ("All".equals(selectedBloodGroup) ? "" : " for " + selectedBloodGroup));
+        } else {
+            tvMapStats.setText("🩸 " + fd + " donor" + (fd != 1 ? "s" : "")
+                    + "  •  🆘 " + fr + " request" + (fr != 1 ? "s" : "")
+                    + " within 50 km");
+        }
+        mMapView.invalidate();
     }
 
     // ─── Map Markers ──────────────────────────────────────────────────────────
 
     private void addMarker(FolderOverlay overlay, double lat, double lon,
                            String name, String bloodGroup, String phone, boolean isDonor) {
-        int iconRes = isDonor
-                ? R.drawable.baseline_person_pin_circle_24
-                : R.drawable.blood;
-        Drawable icon = ContextCompat.getDrawable(this, iconRes);
+        // Donors = green person pin (available to help)
+        // Receivers = blood drop scaled to 40 dp (urgent SOS)
+        Drawable icon = isDonor
+                ? scaledIcon(R.drawable.baseline_person_pin_circle_24, 40, 0xFF4CAF50)
+                : scaledIcon(R.drawable.blood, 40, 0);
 
         Marker marker = new Marker(mMapView);
         marker.setPosition(new GeoPoint(lat, lon));
         marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-        marker.setIcon(icon);
+        if (icon != null) marker.setIcon(icon);
         marker.setTitle(name); // needed by OSMDroid internally
 
         marker.setOnMarkerClickListener((m, mapView) -> {
@@ -327,6 +404,34 @@ public class MapActivity extends AppCompatActivity {
         });
 
         overlay.add(marker);
+    }
+
+    /**
+     * Scales any drawable (PNG or vector) to sizeDp × sizeDp.
+     * For PNG files BitmapFactory is used directly (preserves colours).
+     * For vector XML drawables the drawable is rendered to a canvas.
+     * tintColor = 0 → no tint applied (use natural colour of PNG).
+     */
+    private Drawable scaledIcon(int resId, int sizeDp, int tintColor) {
+        int px = Math.round(sizeDp * getResources().getDisplayMetrics().density);
+
+        // Try as PNG/bitmap first
+        Bitmap bmp = BitmapFactory.decodeResource(getResources(), resId);
+        if (bmp != null) {
+            bmp = Bitmap.createScaledBitmap(bmp, px, px, true);
+            return new BitmapDrawable(getResources(), bmp);
+        }
+
+        // Fall back: vector drawable → canvas
+        Drawable d = ContextCompat.getDrawable(this, resId);
+        if (d == null) return null;
+        d = d.mutate();
+        if (tintColor != 0) d.setTint(tintColor);
+        Bitmap b = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(b);
+        d.setBounds(0, 0, px, px);
+        d.draw(c);
+        return new BitmapDrawable(getResources(), b);
     }
 
     // ─── Detail Card ──────────────────────────────────────────────────────────
@@ -342,22 +447,29 @@ public class MapActivity extends AppCompatActivity {
 
     // ─── Filter Toggles ───────────────────────────────────────────────────────
 
+    // RED card   = filter ON  (markers showing)
+    // GRAY card  = filter OFF (markers hidden)
+    private static final int COLOR_ACTIVE   = 0xFFEC3E3E;
+    private static final int COLOR_INACTIVE = 0xFFDDDDDD;
+    private static final int COLOR_ICON_ON  = 0xFFFFFFFF;
+    private static final int COLOR_ICON_OFF = 0xFF9E9E9E;
+
     private void toggleDonors() {
         donorsVisible = !donorsVisible;
+        androidx.cardview.widget.CardView card =
+                (androidx.cardview.widget.CardView) legendIconCard;
+        android.widget.ImageView iv =
+                (android.widget.ImageView) findViewById(R.id.legendIcon);
         if (donorsVisible) {
             if (!mMapView.getOverlays().contains(donorOverlay))
                 mMapView.getOverlays().add(donorOverlay);
-            ((androidx.cardview.widget.CardView) legendIconCard)
-                    .setCardBackgroundColor(getColor(android.R.color.white));
-            ((android.widget.ImageView) findViewById(R.id.legendIcon))
-                    .setImageTintList(android.content.res.ColorStateList.valueOf(0xFFEC3E3E));
-            tvDonorCount.setTextColor(0xFF212121);
+            card.setCardBackgroundColor(COLOR_ACTIVE);
+            iv.setImageTintList(android.content.res.ColorStateList.valueOf(COLOR_ICON_ON));
+            tvDonorCount.setTextColor(0xFFFFFFFF);
         } else {
             mMapView.getOverlays().remove(donorOverlay);
-            ((androidx.cardview.widget.CardView) legendIconCard)
-                    .setCardBackgroundColor(0xFF9E9E9E);
-            ((android.widget.ImageView) findViewById(R.id.legendIcon))
-                    .setImageTintList(android.content.res.ColorStateList.valueOf(0xFFFFFFFF));
+            card.setCardBackgroundColor(COLOR_INACTIVE);
+            iv.setImageTintList(android.content.res.ColorStateList.valueOf(COLOR_ICON_OFF));
             tvDonorCount.setTextColor(0xFF9E9E9E);
         }
         mMapView.invalidate();
@@ -365,16 +477,20 @@ public class MapActivity extends AppCompatActivity {
 
     private void toggleRequests() {
         requestsVisible = !requestsVisible;
+        androidx.cardview.widget.CardView card =
+                (androidx.cardview.widget.CardView) requestIconCard;
+        android.widget.ImageView iv =
+                (android.widget.ImageView) findViewById(R.id.legendIconReceivers);
         if (requestsVisible) {
             if (!mMapView.getOverlays().contains(requestOverlay))
                 mMapView.getOverlays().add(requestOverlay);
-            ((androidx.cardview.widget.CardView) requestIconCard)
-                    .setCardBackgroundColor(getColor(android.R.color.white));
-            tvRequestCount.setTextColor(0xFF212121);
+            card.setCardBackgroundColor(COLOR_ACTIVE);
+            iv.setImageTintList(android.content.res.ColorStateList.valueOf(COLOR_ICON_ON));
+            tvRequestCount.setTextColor(0xFFFFFFFF);
         } else {
             mMapView.getOverlays().remove(requestOverlay);
-            ((androidx.cardview.widget.CardView) requestIconCard)
-                    .setCardBackgroundColor(0xFF9E9E9E);
+            card.setCardBackgroundColor(COLOR_INACTIVE);
+            iv.setImageTintList(android.content.res.ColorStateList.valueOf(COLOR_ICON_OFF));
             tvRequestCount.setTextColor(0xFF9E9E9E);
         }
         mMapView.invalidate();

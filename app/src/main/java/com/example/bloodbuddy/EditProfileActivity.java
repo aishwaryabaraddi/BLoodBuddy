@@ -25,6 +25,8 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.example.bloodbuddy.ValidationUtils.*;
+
 public class EditProfileActivity extends AppCompatActivity {
 
     private static final String TAG = "EditProfileActivity";
@@ -48,7 +50,7 @@ public class EditProfileActivity extends AppCompatActivity {
             {"Select Taluk"},
             {"Bagalkot", "Badami", "Bilagi", "Hungund", "Jamkhandi", "Mudhol"},
             {"Devanahalli", "Doddaballapur", "Hosakote", "Nelamangala"},
-            {"Bangalore North", "Bangalore East", "Bangalore South", "Anekal"},
+            {"Anekal", "Bangalore East", "Bangalore North", "Bangalore South", "Yelahanka"},
             {"Athani", "Bailhongal", "Belgaum", "Chikodi", "Gokak", "Hukkeri", "Khanapur", "Ramdurg", "Raibag", "Saundatti"},
             {"Bellary", "Siruguppa", "Hospet", "Kudligi", "Sandur", "Hadagali", "Hagaribommanahalli"},
             {"Humnabad", "Bidar", "Bhalki", "Aurad", "Basavakalyan"},
@@ -62,7 +64,7 @@ public class EditProfileActivity extends AppCompatActivity {
             {"Dharwad", "Hubli", "Kalghatgi", "Kundgol", "Navalgund"},
             {"Gadag", "Mundargi", "Nargund", "Ron", "Shirhatti"},
             {"Kamalapur", "Shahbad", "Kalaburagi", "Aland", "Jewargi", "Afzalpur"},
-            {"Arsikere", "Belur", "Channarayapatna", "Hassan", "Holenarsipur", "Sakleshpur", "Alur", "Arkalgud"},
+            {"Alur", "Arakalagudu", "Arsikere", "Belur", "Channarayapatna", "Hassan", "Holenarsipur", "Sakleshpur"},
             {"Hanagal", "Haveri", "Hirekerur", "Ranebennur", "Byadgi", "Savanur", "Shiggaon"},
             {"Madikeri", "Somwarpet", "Virajpet"},
             {"Bangarapet", "Kolar", "Malur", "Mulbagal", "Srinivaspur"},
@@ -72,7 +74,7 @@ public class EditProfileActivity extends AppCompatActivity {
             {"Devadurga", "Lingsugur", "Manvi", "Raichur", "Sindhanur"},
             {"Channapatna", "Kanakapura", "Magadi", "Ramanagaram"},
             {"Bhadravathi", "Hosanagara", "Sagara", "Shikarpur", "Shimoga", "Sorab", "Tirthahalli"},
-            {"Tumkur", "Sira", "Tiptur", "Gubbi", "Madhugiri"},
+            {"Gubbi", "Koratagere", "Kunigal", "Madhugiri", "Pavagada", "Sira", "Tiptur", "Tumkur", "Turuvekere"},
             {"Karkala", "Kundapura", "Udupi"},
             {"Ankola", "Bhatkal", "Haliyal", "Karwar", "Kumta", "Mundgod", "Siddapur", "Sirsi", "Yellapur", "Dandeli"},
             {"Shahpur", "Shorapur", "Yadgir"}
@@ -194,13 +196,15 @@ public class EditProfileActivity extends AppCompatActivity {
         String district = spinnerDistrict.getSelectedItem().toString();
         String taluk = spinnerTaluk.getSelectedItem().toString();
 
-        if (name.length() < 3) {
-            etName.setError("Enter a valid name");
+        if (!isValidName(name)) {
+            etName.setError("Enter a valid name (min 3 chars, letters only)");
+            etName.requestFocus();
             return;
         }
 
-        if (phone.length() != 10) {
-            etPhone.setError("Enter 10-digit number");
+        if (!isValidMobile(phone)) {
+            etPhone.setError("Enter a valid 10-digit mobile number starting with 6-9");
+            etPhone.requestFocus();
             return;
         }
 

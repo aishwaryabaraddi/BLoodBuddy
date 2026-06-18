@@ -95,6 +95,8 @@
         <activity android:name=".BloodInfoActivity"/>
         <activity android:name=".ProfileActivity"/>
         <activity android:name=".NearbyHospitalsActivity"/>
+        <activity android:name=".LocationPickerActivity"
+            android:windowSoftInputMode="stateVisible" />
         <activity android:name=".DonorsListActivity"/>
         <activity android:name=".ForgotPassword"/>
         <activity android:name=".UploadImage"/>
@@ -104,6 +106,10 @@
         <activity android:name=".EditProfileActivity"/>
         <activity android:name=".UserFeedback"/>
         <activity android:name=".AdminFeedback"/>
+        <activity android:name=".AdminDashboardActivity"/>
+        <activity android:name=".AdminDonorsActivity"/>
+        <activity android:name=".AdminSOSActivity"/>
+        <activity android:name=".AdminUsersActivity"/>
         <activity android:name=".EventDetailsActivity" />
         <activity android:name=".ChatAiActivity" />
 

@@ -3,7 +3,6 @@ package com.example.bloodbuddy;
 import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Patterns;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -20,7 +19,8 @@ import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.Calendar;
 import java.util.Locale;
-import java.util.regex.Pattern;
+
+import static com.example.bloodbuddy.ValidationUtils.*;
 
 public class RegisterActivity extends AppCompatActivity {
 
@@ -39,7 +39,7 @@ public class RegisterActivity extends AppCompatActivity {
             {"Select Taluk"},
             {"Bagalkot", "Badami", "Bilagi", "Hungund", "Jamkhandi", "Mudhol"},
             {"Devanahalli", "Doddaballapur", "Hosakote", "Nelamangala"},
-            {"Bangalore North", "Bangalore East", "Bangalore South", "Anekal"},
+            {"Anekal", "Bangalore East", "Bangalore North", "Bangalore South", "Yelahanka"},
             {"Athani", "Bailhongal", "Belgaum", "Chikodi", "Gokak", "Hukkeri", "Khanapur", "Ramdurg", "Raibag", "Saundatti"},
             {"Bellary", "Siruguppa", "Hospet", "Kudligi", "Sandur", "Hadagali", "Hagaribommanahalli"},
             {"Humnabad", "Bidar", "Bhalki", "Aurad", "Basavakalyan"},
@@ -53,7 +53,7 @@ public class RegisterActivity extends AppCompatActivity {
             {"Dharwad", "Hubli", "Kalghatgi", "Kundgol", "Navalgund"},
             {"Gadag", "Mundargi", "Nargund", "Ron", "Shirhatti"},
             {"Kamalapur", "Shahbad", "Kalaburagi", "Aland", "Jewargi", "Afzalpur"},
-            {"Arsikere", "Belur", "Channarayapatna", "Hassan", "Holenarsipur", "Sakleshpur", "Alur", "Arkalgud"},
+            {"Alur", "Arakalagudu", "Arsikere", "Belur", "Channarayapatna", "Hassan", "Holenarsipur", "Sakleshpur"},
             {"Hanagal", "Haveri", "Hirekerur", "Ranebennur", "Byadgi", "Savanur", "Shiggaon"},
             {"Madikeri", "Somwarpet", "Virajpet"},
             {"Bangarapet", "Kolar", "Malur", "Mulbagal", "Srinivaspur"},
@@ -63,7 +63,7 @@ public class RegisterActivity extends AppCompatActivity {
             {"Devadurga", "Lingsugur", "Manvi", "Raichur", "Sindhanur"},
             {"Channapatna", "Kanakapura", "Magadi", "Ramanagaram"},
             {"Bhadravathi", "Hosanagara", "Sagara", "Shikarpur", "Shimoga", "Sorab", "Tirthahalli"},
-            {"Tumkur", "Sira", "Tiptur", "Gubbi", "Madhugiri"},
+            {"Gubbi", "Koratagere", "Kunigal", "Madhugiri", "Pavagada", "Sira", "Tiptur", "Tumkur", "Turuvekere"},
             {"Karkala", "Kundapura", "Udupi"},
             {"Ankola", "Bhatkal", "Haliyal", "Karwar", "Kumta", "Mundgod", "Siddapur", "Sirsi", "Yellapur", "Dandeli"},
             {"Shahpur", "Shorapur", "Yadgir"}
@@ -145,25 +145,6 @@ public class RegisterActivity extends AppCompatActivity {
         spinner.setAdapter(adapter);
     }
 
-    private boolean isValidName(String name) {
-        return name != null && name.trim().length() >= 3 && name.matches("^[a-zA-Z\\s]*$");
-    }
-
-    private boolean isValidEmail(String email) {
-        return email != null && Patterns.EMAIL_ADDRESS.matcher(email).matches() && email.contains(".");
-    }
-
-    private boolean isValidMobile(String phone) {
-        if (phone == null || phone.length() != 10) return false;
-        if (!phone.matches("^[6-9]\\d{9}$")) return false;
-        // Check for dummy repeating numbers like 0000000000, 1111111111, etc.
-        for (int i = 0; i <= 9; i++) {
-            String dummy = String.format(Locale.getDefault(), "%d%d%d%d%d%d%d%d%d%d", i, i, i, i, i, i, i, i, i, i);
-            if (phone.equals(dummy)) return false;
-        }
-        return true;
-    }
-
     private void validateAndRegister() {
         String name = binding.registerName.getText().toString().trim();
         String email = binding.registerEmail.getText().toString().trim();
@@ -202,7 +183,7 @@ public class RegisterActivity extends AppCompatActivity {
             return;
         }
 
-        if (password.length() < 6) {
+        if (!isValidPassword(password)) {
             binding.registerPassword.setError("Minimum 6 characters required");
             binding.registerPassword.requestFocus();
             return;

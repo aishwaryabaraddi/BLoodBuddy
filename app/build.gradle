@@ -7,6 +7,14 @@ android {
     namespace 'com.example.bloodbuddy'
     compileSdk 34
 
+    // Load API keys from local.properties (excluded from git)
+    def localProps = new Properties()
+    def localFile = rootProject.file('local.properties')
+    if (localFile.exists()) {
+        localFile.withInputStream { localProps.load(it) }
+    }
+    def geminiApiKey = localProps.getProperty('GEMINI_API_KEY', '')
+
     defaultConfig {
         applicationId "com.example.bloodbuddy"
         minSdk 24
@@ -15,6 +23,7 @@ android {
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
     }
 
     buildTypes {
@@ -31,6 +40,7 @@ android {
 
     buildFeatures {
         viewBinding true
+        buildConfig true
     }
 
     packagingOptions {

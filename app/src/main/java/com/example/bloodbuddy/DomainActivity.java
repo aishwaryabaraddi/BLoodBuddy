@@ -118,6 +118,7 @@ public class DomainActivity extends AppCompatActivity {
             else if (itemId == R.id.nav_NearbyBloodbanks) startActivity(new Intent(this, NearbyHospitalsActivity.class));
             else if (itemId == R.id.nav_upload) startActivity(new Intent(this, UploadImage.class));
             else if (itemId == R.id.nav_feedback) startActivity(new Intent(this, AdminFeedback.class));
+            else if (itemId == R.id.nav_admin_dashboard) startActivity(new Intent(this, AdminDashboardActivity.class));
             else if (itemId == R.id.nav_LogOut) handleLogout();
             drawerLayout.closeDrawer(GravityCompat.START);
             return true;
@@ -142,6 +143,7 @@ public class DomainActivity extends AppCompatActivity {
             Menu navMenu = navigationView.getMenu();
             navMenu.findItem(R.id.nav_upload).setVisible(false);
             navMenu.findItem(R.id.nav_feedback).setVisible(false);
+            navMenu.findItem(R.id.nav_admin_dashboard).setVisible(false);
 
             View headerView = navigationView.getHeaderView(0);
             TextView navName = headerView.findViewById(R.id.textView9);
@@ -155,9 +157,13 @@ public class DomainActivity extends AppCompatActivity {
                 if (doc != null && doc.exists()) {
                     User userObj = doc.toObject(User.class);
                     if (userObj != null) {
+                        // ── Backward-compat: old docs store 'isDonor', new ones store 'donor' ──
+                        Boolean legacyDonor = doc.getBoolean("isDonor");
+                        if (Boolean.TRUE.equals(legacyDonor)) userObj.setDonor(true);
+
                         ((TextView)findViewById(R.id.user_welcome)).setText("Hello, " + userObj.getName() + "!");
                         navName.setText("Welcome, " + userObj.getName());
-                        
+
                         // Handle Header Initial/Image
                         if (userObj.getName() != null && !userObj.getName().isEmpty()) {
                             navInitial.setText(userObj.getName().substring(0, 1).toUpperCase());
@@ -179,6 +185,7 @@ public class DomainActivity extends AppCompatActivity {
                         boolean isAdmin = userObj.isAdmin() || ADMIN_EMAIL.equalsIgnoreCase(user.getEmail());
                         navMenu.findItem(R.id.nav_upload).setVisible(isAdmin);
                         navMenu.findItem(R.id.nav_feedback).setVisible(isAdmin);
+                        navMenu.findItem(R.id.nav_admin_dashboard).setVisible(isAdmin);
 
                         updateDonorStatus(userObj);
                         subscribeToBloodGroupTopic(userObj.getBloodGroup());
@@ -220,17 +227,54 @@ public class DomainActivity extends AppCompatActivity {
         FirebaseMessaging.getInstance().subscribeToTopic(topic);
     }
 
+    private static final long SOS_EXPIRY_MS = TimeUnit.HOURS.toMillis(72);
+
     private void listenForActiveRequest(String userId) {
         db.collection("receivers")
             .whereEqualTo("userId", userId)
             .whereEqualTo("active", true)
             .addSnapshotListener((value, error) -> {
-                if (value != null && !value.isEmpty()) {
+                Receiver validRequest = null;
+                if (value != null) {
+                    long now = System.currentTimeMillis();
+                    for (QueryDocumentSnapshot doc : value) {
+                        Receiver r = doc.toObject(Receiver.class);
+                        if (r != null && (now - r.getTimestamp()) <= SOS_EXPIRY_MS) {
+                            validRequest = r;
+                            break;
+                        }
+                    }
+                }
+                if (validRequest != null) {
+                    updateActiveSOSCard(validRequest);
                     requestStatusCard.setVisibility(View.VISIBLE);
                 } else {
                     requestStatusCard.setVisibility(View.GONE);
                 }
             });
+    }
+
+    /** Populates the active-SOS card with live request data. */
+    private void updateActiveSOSCard(Receiver r) {
+        String bg         = r.getBloodGroup() != null ? r.getBloodGroup() : "";
+        String patient    = r.getToWhomFor() != null  ? r.getToWhomFor()  : "patient";
+        int    responders = r.getResponderIds() == null ? 0 : r.getResponderIds().size();
+
+        requestStatusTitle.setText("🩸 " + bg + " needed for " + patient);
+
+        if (responders > 0) {
+            requestStatusSubtitle.setText(
+                    "🙋 " + responders + " donor" + (responders > 1 ? "s" : "") +
+                    " responded · Tap to manage →");
+        } else {
+            requestStatusSubtitle.setText("⏳ Looking for nearby donors... · Tap to manage →");
+        }
+
+        // Make the entire card tappable → jump straight to the SOS manager
+        requestStatusCard.setClickable(true);
+        requestStatusCard.setFocusable(true);
+        requestStatusCard.setOnClickListener(v ->
+                startActivity(new Intent(DomainActivity.this, RequestListActivity.class)));
     }
 
     private void updateDonorStatus(User user) {
@@ -239,7 +283,30 @@ public class DomainActivity extends AppCompatActivity {
             return;
         }
         donorStatusCard.setVisibility(View.VISIBLE);
-        donorStatusTitle.setText("Status: Ready to Save Lives");
+
+        String bg = (user.getBloodGroup() != null && !user.getBloodGroup().isEmpty()
+                && !user.getBloodGroup().startsWith("Select"))
+                ? user.getBloodGroup() + " · " : "";
+        donorStatusTitle.setText(bg + "Ready to Save Lives 🩸");
+
+        String last = user.getLastDonationDate();
+        if (last != null && !last.isEmpty()) {
+            donorStatusSubtitle.setText("Last donated: " + last + " · Keep it up!");
+        } else {
+            donorStatusSubtitle.setText("You are registered as a donor. Thank you! 🙏");
+        }
+
+        // Tap donor card → open request list so they can respond to SOS
+        donorStatusCard.setClickable(true);
+        donorStatusCard.setFocusable(true);
+        donorStatusCard.setOnClickListener(v ->
+                startActivity(new Intent(DomainActivity.this, RequestListActivity.class)));
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        handler.removeCallbacks(runnable);
     }
 
     private void checkAndRequestPermissions() {

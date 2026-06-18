@@ -54,6 +54,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
+import static com.example.bloodbuddy.ValidationUtils.*;
+
 public class DonorActivity extends AppCompatActivity {
 
     private static final String TAG = "DonorActivity";
@@ -65,6 +67,7 @@ public class DonorActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
     private FusedLocationProviderClient fusedLocationClient;
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
+    private static final int LOCATION_PICKER_REQUEST          = 2;
 
     private double currentLatitude  = 0.0;
     private double currentLongitude = 0.0;
@@ -100,6 +103,12 @@ public class DonorActivity extends AppCompatActivity {
         requestLocationPermission();
 
         etLastDonated.setOnClickListener(v -> showDatePickerDialog());
+        // Tap the location field → open Swiggy/Zomato-style location picker
+        etLocation.setFocusable(false);
+        etLocation.setOnClickListener(v ->
+                startActivityForResult(
+                        new Intent(this, LocationPickerActivity.class),
+                        LOCATION_PICKER_REQUEST));
         findViewById(R.id.imageViewBack).setOnClickListener(v -> finish());
         btnSubmit.setOnClickListener(v -> showHealthQuestionnaire());
     }
@@ -143,16 +152,6 @@ public class DonorActivity extends AppCompatActivity {
         };
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
-    }
-
-    private boolean isValidName(String name) {
-        return name != null && name.trim().length() >= 3 && name.matches("^[a-zA-Z\\s]*$");
-    }
-
-    private boolean isValidMobile(String phone) {
-        if (phone == null || phone.length() != 10) return false;
-        if (!phone.matches("^[6-9]\\d{9}$")) return false;
-        return !phone.matches("(\\d)\\1{9}");
     }
 
     private void showHealthQuestionnaire() {
@@ -212,13 +211,17 @@ public class DonorActivity extends AppCompatActivity {
             return false;
         }
 
-        int age = Integer.parseInt(ageStr);
+        int age = parseAge(ageStr);
         if (age < 18 || age > 65) {
             Toast.makeText(this, "Ineligible: Age must be between 18 and 65.", Toast.LENGTH_LONG).show();
             return false;
         }
 
-        double weight = Double.parseDouble(weightStr);
+        double weight = parseWeight(weightStr);
+        if (weight < 0) {
+            Toast.makeText(this, "Please enter a valid weight.", Toast.LENGTH_LONG).show();
+            return false;
+        }
         if (weight < 45) {
             Toast.makeText(this, "Ineligible: Weight must be at least 45kg.", Toast.LENGTH_LONG).show();
             return false;
@@ -269,7 +272,7 @@ public class DonorActivity extends AppCompatActivity {
         db.collection("donors").document(donorId).set(donor)
             .addOnSuccessListener(aVoid -> {
                 // Update User flag in firestore
-                db.collection("users").document(donorId).update("isDonor", true);
+                db.collection("users").document(donorId).update("donor", true);
                 showSuccessDialog();
             })
             .addOnFailureListener(e -> {
@@ -290,6 +293,17 @@ public class DonorActivity extends AppCompatActivity {
             finish();
         });
         dialog.show();
+
+        // Pop animation on the checkmark icon
+        android.view.View icon = dialog.findViewById(R.id.ivIcon);
+        icon.setScaleX(0f);
+        icon.setScaleY(0f);
+        icon.animate()
+                .scaleX(1f).scaleY(1f)
+                .setDuration(450)
+                .setStartDelay(80)
+                .setInterpolator(new android.view.animation.OvershootInterpolator(1.8f))
+                .start();
     }
 
     private void showDatePickerDialog() {
@@ -320,10 +334,20 @@ public class DonorActivity extends AppCompatActivity {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 getCurrentLocation();
             } else {
-                etLocation.setEnabled(true);
-                etLocation.setHint("Location permission denied — type your address");
-                Toast.makeText(this, "Please type your address manually.", Toast.LENGTH_SHORT).show();
+                etLocation.setHint("Tap here to search your location");
+                Toast.makeText(this, "Tap the location field to search.", Toast.LENGTH_SHORT).show();
             }
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == LOCATION_PICKER_REQUEST && resultCode == RESULT_OK && data != null) {
+            currentLatitude  = data.getDoubleExtra(LocationPickerActivity.EXTRA_LAT, 0.0);
+            currentLongitude = data.getDoubleExtra(LocationPickerActivity.EXTRA_LON, 0.0);
+            String address   = data.getStringExtra(LocationPickerActivity.EXTRA_ADDRESS);
+            etLocation.setText(address);
         }
     }
 
@@ -410,12 +434,37 @@ public class DonorActivity extends AppCompatActivity {
     private void updateTalukSpinner(String district) {
         List<String> taluks;
         switch (district) {
-            case "Bagalkot": taluks = Arrays.asList("Select Taluk", "Bagalkot", "Badami", "Bilagi", "Hungund", "Jamkhandi", "Mudhol"); break;
-            case "Bangalore Rural": taluks = Arrays.asList("Select Taluk", "Devanahalli", "Doddaballapur", "Hosakote", "Nelamangala"); break;
-            case "Bangalore Urban": taluks = Arrays.asList("Select Taluk", "Bangalore East", "Bangalore North", "Bangalore South", "Anekal", "Yelahanka"); break;
-            case "Belgaum": taluks = Arrays.asList("Select Taluk", "Athani", "Bailhongal", "Belgaum", "Chikodi", "Gokak", "Hukkeri", "Khanapur", "Ramdurg", "Raibag", "Saundatti"); break;
-            case "Tumkur": taluks = Arrays.asList("Select Taluk", "Tumkur", "Sira", "Tiptur", "Gubbi", "Madhugiri", "Kunigal", "Pavagada", "Koratagere", "Turuvekere"); break;
-            default: taluks = Arrays.asList("Select Taluk"); break;
+            case "Bagalkot":         taluks = Arrays.asList("Select Taluk", "Bagalkot", "Badami", "Bilagi", "Hungund", "Jamkhandi", "Mudhol"); break;
+            case "Bangalore Rural":  taluks = Arrays.asList("Select Taluk", "Devanahalli", "Doddaballapur", "Hosakote", "Nelamangala"); break;
+            case "Bangalore Urban":  taluks = Arrays.asList("Select Taluk", "Anekal", "Bangalore East", "Bangalore North", "Bangalore South", "Yelahanka"); break;
+            case "Belgaum":          taluks = Arrays.asList("Select Taluk", "Athani", "Bailhongal", "Belgaum", "Chikodi", "Gokak", "Hukkeri", "Khanapur", "Raibag", "Ramdurg", "Saundatti"); break;
+            case "Bellary":          taluks = Arrays.asList("Select Taluk", "Bellary", "Hadagali", "Hagaribommanahalli", "Hospet", "Kudligi", "Sandur", "Siruguppa"); break;
+            case "Bidar":            taluks = Arrays.asList("Select Taluk", "Aurad", "Basavakalyan", "Bhalki", "Bidar", "Humnabad"); break;
+            case "Bijapur":          taluks = Arrays.asList("Select Taluk", "Basavana Bagewadi", "Bijapur", "Indi", "Muddebihal", "Sindagi"); break;
+            case "Chamarajanagar":   taluks = Arrays.asList("Select Taluk", "Chamarajanagar", "Gundlupet", "Kollegal", "Yelandur"); break;
+            case "Chikballapur":     taluks = Arrays.asList("Select Taluk", "Bagepalli", "Chikballapur", "Chintamani", "Gauribidanur", "Gudibanda", "Sidlaghatta"); break;
+            case "Chikmagalur":      taluks = Arrays.asList("Select Taluk", "Chikmagalur", "Kadur", "Koppa", "Mudigere", "Narasimharajapura", "Sringeri", "Tarikere"); break;
+            case "Chitradurga":      taluks = Arrays.asList("Select Taluk", "Challakere", "Chitradurga", "Hiriyur", "Holalkere", "Hosadurga", "Molakalmuru"); break;
+            case "Dakshina Kannada": taluks = Arrays.asList("Select Taluk", "Bantwal", "Belthangady", "Mangalore", "Puttur", "Sullia", "Ullal"); break;
+            case "Davanagere":       taluks = Arrays.asList("Select Taluk", "Channagiri", "Davanagere", "Harapanahalli", "Harihar", "Honnali", "Jagalur"); break;
+            case "Dharwad":          taluks = Arrays.asList("Select Taluk", "Dharwad", "Hubli", "Kalghatgi", "Kundgol", "Navalgund"); break;
+            case "Gadag":            taluks = Arrays.asList("Select Taluk", "Gadag", "Mundargi", "Nargund", "Ron", "Shirhatti"); break;
+            case "Gulbarga":         taluks = Arrays.asList("Select Taluk", "Afzalpur", "Aland", "Jewargi", "Kalaburagi", "Kamalapur", "Shahbad"); break;
+            case "Hassan":           taluks = Arrays.asList("Select Taluk", "Alur", "Arakalagudu", "Arsikere", "Belur", "Channarayapatna", "Hassan", "Holenarsipur", "Sakleshpur"); break;
+            case "Haveri":           taluks = Arrays.asList("Select Taluk", "Byadgi", "Hanagal", "Haveri", "Hirekerur", "Ranebennur", "Savanur", "Shiggaon"); break;
+            case "Kodagu":           taluks = Arrays.asList("Select Taluk", "Madikeri", "Somwarpet", "Virajpet"); break;
+            case "Kolar":            taluks = Arrays.asList("Select Taluk", "Bangarapet", "Kolar", "Malur", "Mulbagal", "Srinivaspur"); break;
+            case "Koppal":           taluks = Arrays.asList("Select Taluk", "Gangawati", "Koppal", "Kushtagi", "Yelburga"); break;
+            case "Mandya":           taluks = Arrays.asList("Select Taluk", "Krishnarajpet", "Maddur", "Malavalli", "Mandya", "Nagamangala", "Pandavapura", "Srirangapatna"); break;
+            case "Mysore":           taluks = Arrays.asList("Select Taluk", "Hunsur", "Krishnarajanagara", "Mysore", "Nanjangud", "Piriyapatna", "Tirumakudal Narsipur"); break;
+            case "Raichur":          taluks = Arrays.asList("Select Taluk", "Devadurga", "Lingsugur", "Manvi", "Raichur", "Sindhanur"); break;
+            case "Ramanagara":       taluks = Arrays.asList("Select Taluk", "Channapatna", "Kanakapura", "Magadi", "Ramanagaram"); break;
+            case "Shimoga":          taluks = Arrays.asList("Select Taluk", "Bhadravathi", "Hosanagara", "Sagara", "Shikarpur", "Shimoga", "Sorab", "Tirthahalli"); break;
+            case "Tumkur":           taluks = Arrays.asList("Select Taluk", "Gubbi", "Koratagere", "Kunigal", "Madhugiri", "Pavagada", "Sira", "Tiptur", "Tumkur", "Turuvekere"); break;
+            case "Udupi":            taluks = Arrays.asList("Select Taluk", "Karkala", "Kundapura", "Udupi"); break;
+            case "Uttara Kannada":   taluks = Arrays.asList("Select Taluk", "Ankola", "Bhatkal", "Dandeli", "Haliyal", "Karwar", "Kumta", "Mundgod", "Siddapur", "Sirsi", "Yellapur"); break;
+            case "Yadgir":           taluks = Arrays.asList("Select Taluk", "Shahpur", "Shorapur", "Yadgir"); break;
+            default:                 taluks = Arrays.asList("Select Taluk"); break;
         }
         setupAdapter(spinnerTaluk, taluks);
     }
