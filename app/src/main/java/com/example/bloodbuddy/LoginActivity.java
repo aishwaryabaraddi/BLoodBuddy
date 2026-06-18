@@ -14,6 +14,8 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import static com.example.bloodbuddy.ValidationUtils.*;
+
 public class LoginActivity extends AppCompatActivity {
 
     private static final String ADMIN_EMAIL = "viju.r@gmail.com";
@@ -73,8 +75,20 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
+        if (!isValidEmail(email)) {
+            binding.loginEmail.setError("Enter a valid email address");
+            binding.loginEmail.requestFocus();
+            return;
+        }
+
         if (password.isEmpty()) {
             binding.loginPassword.setError("Password is required");
+            binding.loginPassword.requestFocus();
+            return;
+        }
+
+        if (!isValidPassword(password)) {
+            binding.loginPassword.setError("Minimum 6 characters required");
             binding.loginPassword.requestFocus();
             return;
         }

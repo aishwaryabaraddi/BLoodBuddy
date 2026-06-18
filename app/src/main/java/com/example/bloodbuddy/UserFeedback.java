@@ -22,6 +22,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.example.bloodbuddy.ValidationUtils.*;
+
 public class UserFeedback extends AppCompatActivity {
 
     private TextInputEditText etName, etContact, etEmail, etFeedback;
@@ -84,19 +86,17 @@ public class UserFeedback extends AppCompatActivity {
         tilEmail.setError(null);
         tilFeedback.setError(null);
 
-        if (TextUtils.isEmpty(name) || name.length() < 3) {
-            tilName.setError("Valid name required");
+        if (!isValidName(name)) {
+            tilName.setError("Valid name required (min 3 chars)");
             etName.requestFocus();
             return;
         }
-        if (TextUtils.isEmpty(contact) || contact.length() != 10
-                || !contact.matches("^[6-9]\\d{9}$")) {
+        if (!isValidMobile(contact)) {
             tilContact.setError("Enter a valid 10-digit mobile number");
             etContact.requestFocus();
             return;
         }
-        if (TextUtils.isEmpty(email)
-                || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+        if (!isValidEmail(email)) {
             tilEmail.setError("Enter a valid email address");
             etEmail.requestFocus();
             return;
